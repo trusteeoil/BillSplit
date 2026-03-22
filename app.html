@@ -187,15 +187,19 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 .report-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .report-bar-label{width:140px;font-size:.8rem;font-weight:600;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
 .report-bar-track{flex:1;background:var(--border);border-radius:4px;height:10px;overflow:hidden}
-.report-bar-fill{height:100%;border-radius:4px;background:var(--accent);transition:width .3s}
+.report-bar-fill{height:100%;border-radius:4px;background:var(--green);transition:width .3s}
 .report-bar-fill.green{background:#22c55e}
 .report-bar-fill.blue{background:#3b82f6}
 .report-bar-value{width:72px;text-align:right;font-size:.8rem;font-weight:700;color:var(--text);flex-shrink:0}
 .report-empty{color:var(--muted);font-size:.85rem;text-align:center;padding:20px 0}
-.report-month-block{margin-bottom:20px}
+.report-month-block{margin-bottom:8px;border:1px solid var(--border);border-radius:8px;overflow:hidden}
 .report-month-block:last-child{margin-bottom:0}
-.report-month-name{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);display:flex;justify-content:space-between;align-items:center;padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:10px}
-.report-month-name span{color:var(--ink);font-size:.85rem;text-transform:none;letter-spacing:0;font-weight:800}
+.report-month-block summary{list-style:none;display:flex;justify-content:space-between;align-items:center;padding:11px 14px;cursor:pointer;background:var(--light);font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);user-select:none;gap:8px}
+.report-month-block summary::-webkit-details-marker{display:none}
+.report-month-block summary .rm-chevron{font-size:.7rem;transition:transform .2s;flex-shrink:0}
+.report-month-block[open] summary .rm-chevron{transform:rotate(180deg)}
+.report-month-block summary .rm-total{color:var(--ink);font-size:.88rem;text-transform:none;letter-spacing:0;font-weight:800;margin-left:auto}
+.report-month-cats{padding:12px 14px;display:flex;flex-direction:column;gap:2px}
 
 /* Avatar colors */
 .avatar-0{background:#e67e5a}
@@ -822,7 +826,7 @@ function renderReports(){
   </div>`).join('');
 
   // ── Section 2: Category breakdown per month ──────────────────────
-  const monthBlocks=months.map(mk=>{
+  const monthBlocks=months.map((mk,i)=>{
     const mbills=billsByMonth[mk];
     const byCat={};
     mbills.forEach(b=>{byCat[b.category]=(byCat[b.category]||0)+Number(b.amount||0);});
@@ -835,10 +839,10 @@ function renderReports(){
         <div class="report-bar-track"><div class="report-bar-fill" style="width:${Math.round(byCat[c.id]/maxCat*100)}%"></div></div>
         <div class="report-bar-value">${fm(byCat[c.id])}</div>
       </div>`).join('');
-    return`<div class="report-month-block">
-      <div class="report-month-name">${monthLabel(mk)}<span>${fm(monthTotals[mk])}</span></div>
-      ${rows}
-    </div>`;
+    return`<details class="report-month-block"${i===0?' open':''}>
+      <summary><span>${monthLabel(mk)}</span><span class="rm-total">${fm(monthTotals[mk])}</span><span class="rm-chevron">▼</span></summary>
+      <div class="report-month-cats">${rows}</div>
+    </details>`;
   }).join('');
 
   el.innerHTML=`
