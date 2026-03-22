@@ -17,7 +17,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 .layout{display:flex;min-height:100vh;overflow-x:hidden}
 
 /* SIDEBAR */
-.sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50;flex-shrink:0;overflow-y:auto}
+.sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50;flex-shrink:0;overflow-y:auto;transition:transform .25s cubic-bezier(.4,0,.2,1)}
+.sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:49;backdrop-filter:blur(1px)}
+.hamburger-btn{display:none;background:none;border:none;cursor:pointer;padding:6px;border-radius:8px;color:var(--ink);flex-shrink:0;line-height:1}
+.hamburger-btn:hover{background:var(--light)}
+.hamburger-btn svg{display:block}
 .sidebar-logo{padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
 .logo-icon{width:34px;height:34px;background:var(--green);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
 .logo-text{font-size:1.1rem;font-weight:800;letter-spacing:-.3px}
@@ -230,7 +234,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 @media(max-width:680px){
-  .sidebar{display:none}
+  .sidebar{transform:translateX(-100%);box-shadow:none}
+  .sidebar.open{transform:translateX(0);box-shadow:4px 0 24px rgba(0,0,0,.18)}
+  .sidebar-backdrop.open{display:block}
+  .hamburger-btn{display:flex;align-items:center;justify-content:center}
   .main{margin-left:0}
   .mobile-nav{display:flex}
   .mobile-fab{display:flex}
@@ -256,8 +263,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 <body>
 <div class="layout">
 
+<div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()"></div>
+
 <!-- SIDEBAR -->
-<aside class="sidebar">
+<aside class="sidebar" id="sidebar">
   <div class="sidebar-logo">
     <div class="logo-icon">🏠</div>
     <div><div class="logo-text">BillSplit</div><div class="logo-sub">Winona household</div></div>
@@ -284,8 +293,15 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 <div class="main">
   <div class="topbar">
     <div class="topbar-left">
-      <h2 id="tb-title">Winona</h2>
-      <p id="tb-sub"></p>
+      <button class="hamburger-btn" onclick="openSidebar()" aria-label="Open menu">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/>
+        </svg>
+      </button>
+      <div>
+        <h2 id="tb-title">Winona</h2>
+        <p id="tb-sub"></p>
+      </div>
     </div>
     <div class="topbar-right">
       <button class="btn btn-ghost" onclick="openSettleModal()" id="settle-btn">Settle up</button>
@@ -605,6 +621,7 @@ function renderSidebar(){
 
 function togglePersonFilter(id){
   filterPersonId=filterPersonId===id?null:id;
+  closeSidebar();
   renderSidebar();
   if(activeView==='ledger'){renderStats();renderLedger();}
 }
@@ -1125,8 +1142,18 @@ window.savePerson=async function(){
 };
 
 // ── VIEW SWITCH ───────────────────────────────────────────────────
+function openSidebar(){
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebar-backdrop').classList.add('open');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-backdrop').classList.remove('open');
+}
+
 function switchView(v){
   filterPersonId=null;
+  closeSidebar();
   activeView=v;
   document.querySelectorAll('.view-panel').forEach(el=>el.classList.remove('active'));
   document.getElementById(`view-${v}`).classList.add('active');
