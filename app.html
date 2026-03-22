@@ -632,13 +632,10 @@ function renderLedger(){
     const pct=(b.split_pct??50)/100;
     const owe=Number(b.amount)*pct;
     const otherNames=people.filter(p=>!p.is_you).map(p=>p.name).join('/');
-    const isPersonal=pct===0;
-    const oweLabel=isPersonal?'personal — no split':isYou?`you lent ${otherNames}`:`${payer.name} lent you`;
-    const oweClass=isPersonal?'':isYou?'orange':'green';
+    const oweLabel=isYou?`you lent ${otherNames}`:`${payer.name} lent you`;
+    const oweClass=isYou?'orange':'green';
     const payerStr=isYou?'you paid':`${payer.name} paid`;
-    const oweHtml=isPersonal
-      ?`<div class="exp-owe-label">personal</div>`
-      :`<div class="exp-owe ${oweClass}">${fm(owe)}</div><div class="exp-owe-label">${oweLabel}</div>`;
+    const oweHtml=`<div class="exp-owe ${oweClass}">${fm(owe)}</div><div class="exp-owe-label">${oweLabel}</div>`;
     h+=`<div class="expense-row">
       <div class="exp-date"><div class="exp-date-month">${mo}</div><div class="exp-date-day">${+day}</div></div>
       <div class="exp-icon">${cat.icon}</div>
@@ -1025,10 +1022,10 @@ function setPayer(id){
 }
 
 function buildSplitToggle(){
-  const isCustom=selSplitPct!==50&&selSplitPct!==0;
-  const opts=[{label:'50/50',pct:50},{label:'Personal',pct:0},{label:'Custom %',pct:-1}];
+  const isCustom=selSplitPct!==50&&selSplitPct!==100;
+  const opts=[{label:'50/50',pct:50},{label:'Full',pct:100},{label:'Custom %',pct:-1}];
   document.getElementById('split-toggle').innerHTML=opts.map(o=>{
-    const sel=(o.pct===50&&selSplitPct===50)||(o.pct===0&&selSplitPct===0)||(o.pct===-1&&isCustom);
+    const sel=(o.pct===50&&selSplitPct===50)||(o.pct===100&&selSplitPct===100)||(o.pct===-1&&isCustom);
     return`<button class="split-btn${sel?' sel':''}" onclick="setSplit(${o.pct})">${o.label}</button>`;
   }).join('');
   document.getElementById('split-custom-wrap').style.display=isCustom?'':'none';
