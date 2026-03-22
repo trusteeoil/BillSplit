@@ -244,6 +244,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
   .content{padding:14px 12px 140px}
   .topbar{padding:12px 14px}
   .topbar .btn-ghost{display:none}
+  #settle-btn{display:inline-flex;padding:7px 12px;font-size:.75rem}
   #add-btn{display:none}
   .stats-bar{gap:8px}
   .stat-card{padding:10px 10px;min-width:0;flex-basis:calc(50% - 4px);flex-shrink:0}
@@ -285,6 +286,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
     <div class="bal-label">Your balance</div>
     <div class="bal-amount" id="sb-amount">—</div>
     <div class="bal-sub" id="sb-sub"></div>
+    <button class="btn btn-secondary" onclick="openSettleModal();closeSidebar();" style="width:100%;margin-bottom:8px;padding:10px">Settle up</button>
     <button class="signout-btn" onclick="signOut()">Sign out</button>
     <button class="signout-btn" onclick="location.reload()" style="margin-top:6px">↻ Check for updates</button>
   </div>
