@@ -140,6 +140,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 .toggle-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
 .payer-btn{flex:1;min-width:80px;padding:11px;border-radius:10px;border:2px solid var(--border);background:var(--light);font-family:var(--font);font-size:.88rem;font-weight:700;cursor:pointer;transition:all .15s;color:var(--muted)}
 .payer-btn.sel{border-color:var(--orange);background:rgba(230,126,90,.1);color:var(--orange)}
+.split-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;margin-top:2px}
+.split-btn{flex:1;min-width:60px;padding:8px 6px;border-radius:10px;border:2px solid var(--border);background:var(--light);font-family:var(--font);font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s;color:var(--muted)}
+.split-btn.sel{border-color:var(--green);background:rgba(91,197,167,.12);color:var(--green-dark)}
 
 .cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:16px}
 .cat-btn{background:var(--light);border:2px solid transparent;border-radius:10px;padding:9px 4px 7px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all .15s}
@@ -335,6 +338,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
     </div>
     <div class="form-label" style="margin-bottom:6px">Who paid?</div>
     <div class="toggle-row" id="payer-toggle"></div>
+    <div class="split-label">Split</div>
+    <div class="toggle-row" id="split-toggle" style="margin-bottom:8px"></div>
+    <div id="split-custom-wrap" style="display:none;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <input class="form-input" id="f-split-pct" type="number" inputmode="decimal" min="0" max="100" style="width:90px" placeholder="e.g. 30" oninput="setSplitCustom()">
+        <span style="font-weight:700;color:var(--muted);font-size:.9rem">% the other person owes</span>
+      </div>
+    </div>
     <div class="form-label" style="margin-bottom:6px">Category</div>
     <div class="cat-grid" id="cat-grid"></div>
     <div class="form-row full"><div>
@@ -465,6 +476,7 @@ const AVATAR_COLORS=['#e67e5a','#3d85c8','#5bc5a7','#9b59b6','#e67e22'];
 let people=[], bills=[], recurs=[], history=[];
 let activeView='ledger';
 let selPayerId=null;
+let selSplitPct=50; // % the non-payer owes: 50=50/50, 0=personal, other=custom
 let filterPersonId=null; // sidebar ledger filter
 let selCat='groceries';
 let recurOn=false;
@@ -533,9 +545,13 @@ function calcBal(){
     else paid[b.payer_person_id]=Number(b.amount);
   });
   const total=Object.values(paid).reduce((a,b)=>a+b,0);
-  const youPaid=paid[myPersonId]||0;
-  const othersPaid=total-youPaid;
-  const balance=(youPaid-othersPaid)/2;
+  let balance=0;
+  bills.forEach(b=>{
+    const pct=(b.split_pct??50)/100;
+    const owed=Number(b.amount)*pct;
+    if(b.payer_person_id===myPersonId) balance+=owed;
+    else balance-=owed;
+  });
   return{balance,paid,total};
 }
 
@@ -613,11 +629,16 @@ function renderLedger(){
     const isYou=b.payer_person_id===myPersonId;
     const[,,day]=b.date.split('-');
     const mo=new Date(b.date+'T00:00:00').toLocaleDateString('en-US',{month:'short'}).toUpperCase();
-    const owe=Number(b.amount)/2;
+    const pct=(b.split_pct??50)/100;
+    const owe=Number(b.amount)*pct;
     const otherNames=people.filter(p=>!p.is_you).map(p=>p.name).join('/');
-    const oweLabel=isYou?`you lent ${otherNames}`:`${payer.name} lent you`;
-    const oweClass=isYou?'orange':'green';
+    const isPersonal=pct===0;
+    const oweLabel=isPersonal?'personal — no split':isYou?`you lent ${otherNames}`:`${payer.name} lent you`;
+    const oweClass=isPersonal?'':isYou?'orange':'green';
     const payerStr=isYou?'you paid':`${payer.name} paid`;
+    const oweHtml=isPersonal
+      ?`<div class="exp-owe-label">personal</div>`
+      :`<div class="exp-owe ${oweClass}">${fm(owe)}</div><div class="exp-owe-label">${oweLabel}</div>`;
     h+=`<div class="expense-row">
       <div class="exp-date"><div class="exp-date-month">${mo}</div><div class="exp-date-day">${+day}</div></div>
       <div class="exp-icon">${cat.icon}</div>
@@ -627,8 +648,7 @@ function renderLedger(){
       </div>
       <div class="exp-amounts">
         <div class="exp-total">${fm(Number(b.amount))}</div>
-        <div class="exp-owe ${oweClass}">${fm(owe)}</div>
-        <div class="exp-owe-label">${oweLabel}</div>
+        ${oweHtml}
       </div>
       <div class="exp-actions">
         <button class="icon-btn" title="Edit" onclick="editBill('${b.id}')">✏️</button>
@@ -733,13 +753,18 @@ async function exportCSV(){
   const seen=new Set();
   allBills=allBills.filter(b=>{if(seen.has(b.id))return false;seen.add(b.id);return true});
   if(!allBills.length){showToast(`No expenses found for ${year}`);return;}
-  const headers=['Date','Description','Category','Paid By','Total Amount',...people.map(p=>`${p.name}'s Share`)];
+  const headers=['Date','Description','Category','Split','Paid By','Total Amount',...people.map(p=>`${p.name}'s Share`)];
   const rows=allBills.map(b=>{
     const cat=CATMAP[b.category]||CATMAP.other;
     const payer=personById(b.payer_person_id);
     const amt=Number(b.amount||0);
-    const share=(amt/people.length).toFixed(2);
-    return[b.date,`"${(b.name||'').replace(/"/g,'""')}"`,`"${cat.name}"`,payer.name,amt.toFixed(2),...people.map(()=>share)].join(',');
+    const pct=(b.split_pct??50)/100;
+    const splitLabel=pct===0?'Personal':pct===0.5?'50/50':`${Math.round(pct*100)}% other`;
+    const shares=people.map(p=>{
+      if(p.id===b.payer_person_id) return(amt*(1-pct)).toFixed(2);
+      return(amt*pct).toFixed(2);
+    });
+    return[b.date,`"${(b.name||'').replace(/"/g,'""')}"`,`"${cat.name}"`,splitLabel,payer.name,amt.toFixed(2),...shares].join(',');
   });
   const csv=[headers.join(','),...rows].join('\n');
   const blob=new Blob([csv],{type:'text/csv'});
@@ -908,13 +933,13 @@ function openAddModal(forRecur){
   document.getElementById('f-amount').value='';
   document.getElementById('f-desc').value='';
   document.getElementById('f-date').value=todayStr();
-  selPayerId=myPersonId; selCat='groceries';
+  selPayerId=myPersonId; selCat='groceries'; selSplitPct=50;
   recurOn=!!forRecur;
   document.getElementById('recur-sw').classList.toggle('on',recurOn);
   document.getElementById('recur-extra').classList.toggle('vis',recurOn);
   document.getElementById('add-title').textContent=forRecur?'Add recurring bill':'Add expense';
   document.getElementById('save-btn').textContent=forRecur?'Add recurring bill':'Add expense';
-  buildPayerToggle(); buildCatGrid();
+  buildPayerToggle(); buildSplitToggle(); buildCatGrid();
   document.getElementById('add-overlay').classList.add('open');
   setTimeout(()=>document.getElementById('f-amount').focus(),300);
 }
@@ -926,13 +951,14 @@ window.editBill=function(id){
   document.getElementById('f-amount').value=b.amount;
   document.getElementById('f-desc').value=b.name;
   document.getElementById('f-date').value=b.date;
-  selPayerId=b.payer_person_id; selCat=b.category;
+  selPayerId=b.payer_person_id; selCat=b.category; selSplitPct=b.split_pct??50;
   recurOn=false;
   document.getElementById('recur-sw').classList.remove('on');
   document.getElementById('recur-extra').classList.remove('vis');
   document.getElementById('add-title').textContent='Edit expense';
   document.getElementById('save-btn').textContent='Save changes';
-  buildPayerToggle(); buildCatGrid();
+  buildPayerToggle(); buildSplitToggle(); buildCatGrid();
+  if(selSplitPct!==50&&selSplitPct!==0){document.getElementById('f-split-pct').value=selSplitPct;}
   document.getElementById('add-overlay').classList.add('open');
 };
 
@@ -942,7 +968,7 @@ window.editRecur=function(id){
   document.getElementById('f-amount').value=r.amount;
   document.getElementById('f-desc').value=r.name;
   document.getElementById('f-date').value=todayStr();
-  selPayerId=r.payer_person_id; selCat=r.category;
+  selPayerId=r.payer_person_id; selCat=r.category; selSplitPct=r.split_pct??50;
   recurOn=true;
   document.getElementById('recur-sw').classList.add('on');
   document.getElementById('recur-extra').classList.add('vis');
@@ -950,7 +976,8 @@ window.editRecur=function(id){
   document.getElementById('f-day').value=r.day_of_month;
   document.getElementById('add-title').textContent='Edit recurring bill';
   document.getElementById('save-btn').textContent='Save changes';
-  buildPayerToggle(); buildCatGrid();
+  buildPayerToggle(); buildSplitToggle(); buildCatGrid();
+  if(selSplitPct!==50&&selSplitPct!==0){document.getElementById('f-split-pct').value=selSplitPct;}
   document.getElementById('add-overlay').classList.add('open');
 };
 
@@ -969,19 +996,19 @@ window.saveBill=async function(){
   if(editingId){
     if(editingId.startsWith('recur:')){
       const rid=editingId.slice(6);
-      await sb.from('recurring_bills').update({name,category:selCat,amount,payer_person_id:selPayerId,frequency:document.getElementById('f-freq').value,day_of_month:parseInt(document.getElementById('f-day').value)||1}).eq('id',rid);
+      await sb.from('recurring_bills').update({name,category:selCat,amount,payer_person_id:selPayerId,split_pct:selSplitPct,frequency:document.getElementById('f-freq').value,day_of_month:parseInt(document.getElementById('f-day').value)||1}).eq('id',rid);
       await loadRecurs();
     }else{
-      await sb.from('bills').update({name,category:selCat,amount,payer_person_id:selPayerId,date:dateVal,month:billMonth}).eq('id',editingId);
+      await sb.from('bills').update({name,category:selCat,amount,payer_person_id:selPayerId,split_pct:selSplitPct,date:dateVal,month:billMonth}).eq('id',editingId);
       await loadBills();
     }
   }else{
     if(recurOn){
-      const{data:nr}=await sb.from('recurring_bills').insert({household_id:HOUSEHOLD_ID,name,category:selCat,amount,payer_person_id:selPayerId,frequency:document.getElementById('f-freq').value,day_of_month:parseInt(document.getElementById('f-day').value)||1}).select().single();
-      await sb.from('bills').insert({household_id:HOUSEHOLD_ID,recur_id:nr.id,name,category:selCat,amount,payer_person_id:selPayerId,date:dateVal,month:billMonth});
+      const{data:nr}=await sb.from('recurring_bills').insert({household_id:HOUSEHOLD_ID,name,category:selCat,amount,payer_person_id:selPayerId,split_pct:selSplitPct,frequency:document.getElementById('f-freq').value,day_of_month:parseInt(document.getElementById('f-day').value)||1}).select().single();
+      await sb.from('bills').insert({household_id:HOUSEHOLD_ID,recur_id:nr.id,name,category:selCat,amount,payer_person_id:selPayerId,split_pct:selSplitPct,date:dateVal,month:billMonth});
       await Promise.all([loadRecurs(),loadBills()]);
     }else{
-      await sb.from('bills').insert({household_id:HOUSEHOLD_ID,name,category:selCat,amount,payer_person_id:selPayerId,date:dateVal,month:billMonth});
+      await sb.from('bills').insert({household_id:HOUSEHOLD_ID,name,category:selCat,amount,payer_person_id:selPayerId,split_pct:selSplitPct,date:dateVal,month:billMonth});
       await loadBills();
     }
   }
@@ -995,6 +1022,33 @@ window.saveBill=async function(){
 function setPayer(id){
   selPayerId=id;
   document.querySelectorAll('.payer-btn').forEach(b=>b.classList.toggle('sel',b.dataset.pid===id));
+}
+
+function buildSplitToggle(){
+  const isCustom=selSplitPct!==50&&selSplitPct!==0;
+  const opts=[{label:'50/50',pct:50},{label:'Personal',pct:0},{label:'Custom %',pct:-1}];
+  document.getElementById('split-toggle').innerHTML=opts.map(o=>{
+    const sel=(o.pct===50&&selSplitPct===50)||(o.pct===0&&selSplitPct===0)||(o.pct===-1&&isCustom);
+    return`<button class="split-btn${sel?' sel':''}" onclick="setSplit(${o.pct})">${o.label}</button>`;
+  }).join('');
+  document.getElementById('split-custom-wrap').style.display=isCustom?'':'none';
+}
+function setSplit(pct){
+  if(pct===-1){
+    selSplitPct=30;
+    document.getElementById('f-split-pct').value='30';
+    document.getElementById('split-custom-wrap').style.display='';
+  }else{
+    selSplitPct=pct;
+    document.getElementById('f-split-pct').value='';
+    document.getElementById('split-custom-wrap').style.display='none';
+  }
+  buildSplitToggle();
+}
+function setSplitCustom(){
+  const v=parseFloat(document.getElementById('f-split-pct').value);
+  if(!isNaN(v)&&v>=0&&v<=100)selSplitPct=v;
+  buildSplitToggle();
 }
 
 window.toggleRecur=function(){
