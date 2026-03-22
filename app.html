@@ -12,9 +12,9 @@
   --font:'Nunito',sans-serif; --sidebar-w:260px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html{height:100%}
-body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:100%}
-.layout{display:flex;min-height:100vh}
+html{height:100%;overflow-x:hidden}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:100%;overflow-x:hidden}
+.layout{display:flex;min-height:100vh;overflow-x:hidden}
 
 /* SIDEBAR */
 .sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:50;flex-shrink:0;overflow-y:auto}
@@ -88,7 +88,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 .exp-info{flex:1;min-width:0}
 .exp-name-row{display:flex;align-items:center;gap:6px}
 .exp-name{font-size:.9rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.recur-tag{font-size:.55rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:var(--light);border:1px solid var(--border);color:var(--muted);padding:2px 5px;border-radius:4px;white-space:nowrap}
+.recur-tag{font-size:.85rem;line-height:1;flex-shrink:0;opacity:.6}
 .exp-sub{font-size:.72rem;color:var(--muted);font-weight:500;margin-top:1px}
 .exp-amounts{text-align:right;flex-shrink:0}
 .exp-total{font-size:.75rem;color:var(--muted);font-weight:500}
@@ -202,7 +202,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 .mobile-nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;font-family:var(--font);font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);cursor:pointer;padding:4px 12px;transition:color .15s}
 .mobile-nav-btn .mni{font-size:1.3rem}
 .mobile-nav-btn.active{color:var(--green-dark)}
-.mobile-add-btn{width:52px;height:52px;background:var(--orange);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;color:#fff;border:none;cursor:pointer;box-shadow:0 4px 14px rgba(230,126,90,.4);margin-top:-12px}
+.mobile-fab{display:none;position:fixed;bottom:calc(72px + env(safe-area-inset-bottom,0px));right:18px;width:56px;height:56px;border-radius:50%;background:var(--orange);color:#fff;font-size:1.8rem;border:none;cursor:pointer;box-shadow:0 4px 18px rgba(230,126,90,.5);z-index:55;align-items:center;justify-content:center;line-height:1;font-family:var(--font);font-weight:300;-webkit-tap-highlight-color:transparent}
 
 /* Confirm dialog */
 .confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;pointer-events:none;transition:opacity .15s}
@@ -222,14 +222,18 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
   .sidebar{display:none}
   .main{margin-left:0}
   .mobile-nav{display:flex}
-  .content{padding:14px 12px 100px}
+  .mobile-fab{display:flex}
+  .content{padding:14px 12px 140px}
   .topbar{padding:12px 14px}
   .topbar .btn-ghost{display:none}
+  #add-btn{display:none}
   .stats-bar{gap:8px}
   .stat-card{padding:11px 12px;min-width:90px}
   .stat-value{font-size:1.05rem}
   .form-row{grid-template-columns:1fr}
   .exp-actions{gap:3px}
+  .report-bar-label{width:100px}
+  .report-bar-value{width:60px}
 }
 @media(max-width:400px){
   .cat-grid{grid-template-columns:repeat(3,1fr)}
@@ -313,10 +317,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 <!-- MOBILE NAV -->
 <div class="mobile-nav">
   <button class="mobile-nav-btn active" id="mn-ledger" onclick="switchView('ledger')"><span class="mni">📋</span>Month</button>
-  <button class="mobile-add-btn" onclick="openAddModal(false)">+</button>
   <button class="mobile-nav-btn" id="mn-recurring" onclick="switchView('recurring')"><span class="mni">🔄</span>Recurring</button>
   <button class="mobile-nav-btn" id="mn-reports" onclick="switchView('reports')"><span class="mni">📊</span>Reports</button>
 </div>
+<button class="mobile-fab" onclick="openAddModal(false)" aria-label="Add expense">+</button>
 
 <!-- ADD / EDIT EXPENSE MODAL -->
 <div class="modal-overlay" id="add-overlay">
@@ -618,7 +622,7 @@ function renderLedger(){
       <div class="exp-date"><div class="exp-date-month">${mo}</div><div class="exp-date-day">${+day}</div></div>
       <div class="exp-icon">${cat.icon}</div>
       <div class="exp-info">
-        <div class="exp-name-row"><div class="exp-name">${b.name}</div>${b.recur_id?'<span class="recur-tag">Recurring</span>':''}</div>
+        <div class="exp-name-row"><div class="exp-name">${b.name}</div>${b.recur_id?'<span class="recur-tag" title="Recurring">🔄</span>':''}</div>
         <div class="exp-sub">${payerStr}</div>
       </div>
       <div class="exp-amounts">
