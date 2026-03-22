@@ -178,6 +178,18 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 .export-title{font-size:.95rem;font-weight:800;margin-bottom:12px}
 .export-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
 
+/* Reports view */
+.report-section{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px}
+.report-section-title{font-size:.95rem;font-weight:800;margin-bottom:16px;color:var(--text)}
+.report-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.report-bar-label{width:140px;font-size:.8rem;font-weight:600;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
+.report-bar-track{flex:1;background:var(--border);border-radius:4px;height:10px;overflow:hidden}
+.report-bar-fill{height:100%;border-radius:4px;background:var(--accent);transition:width .3s}
+.report-bar-fill.green{background:#22c55e}
+.report-bar-fill.blue{background:#3b82f6}
+.report-bar-value{width:72px;text-align:right;font-size:.8rem;font-weight:700;color:var(--text);flex-shrink:0}
+.report-empty{color:var(--muted);font-size:.85rem;text-align:center;padding:20px 0}
+
 /* Avatar colors */
 .avatar-0{background:#e67e5a}
 .avatar-1{background:#3d85c8}
@@ -240,6 +252,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
     <div class="sidebar-item" id="sn-history" onclick="switchView('history')"><span class="si-icon">📂</span> History</div>
     <div class="sidebar-item" id="sn-people" onclick="switchView('people')"><span class="si-icon">👥</span> People</div>
     <div class="sidebar-item" id="sn-export" onclick="switchView('export')"><span class="si-icon">📤</span> Export</div>
+    <div class="sidebar-item" id="sn-reports" onclick="switchView('reports')"><span class="si-icon">📊</span> Reports</div>
   </div>
   <div class="sidebar-section" id="sidebar-people-list"></div>
   <div class="sidebar-balance">
@@ -275,10 +288,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
     </div>
     <div class="view-panel" id="view-history"><div id="history-area"></div></div>
     <div class="view-panel" id="view-people">
-      <div style="margin-bottom:16px;display:flex;justify-content:flex-end">
-        <button class="btn btn-primary" onclick="openPersonModal()">+ Add person</button>
-      </div>
       <div id="people-area"></div>
+    </div>
+    <div class="view-panel" id="view-reports">
+      <div id="reports-area"></div>
     </div>
     <div class="view-panel" id="view-export">
       <div class="export-section">
@@ -302,6 +315,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
   <button class="mobile-nav-btn active" id="mn-ledger" onclick="switchView('ledger')"><span class="mni">📋</span>Month</button>
   <button class="mobile-add-btn" onclick="openAddModal(false)">+</button>
   <button class="mobile-nav-btn" id="mn-recurring" onclick="switchView('recurring')"><span class="mni">🔄</span>Recurring</button>
+  <button class="mobile-nav-btn" id="mn-reports" onclick="switchView('reports')"><span class="mni">📊</span>Reports</button>
 </div>
 
 <!-- ADD / EDIT EXPENSE MODAL -->
@@ -447,6 +461,7 @@ const AVATAR_COLORS=['#e67e5a','#3d85c8','#5bc5a7','#9b59b6','#e67e22'];
 let people=[], bills=[], recurs=[], history=[];
 let activeView='ledger';
 let selPayerId=null;
+let filterPersonId=null; // sidebar ledger filter
 let selCat='groceries';
 let recurOn=false;
 let editingId=null;
@@ -556,7 +571,13 @@ function renderSidebar(){
 
   const pl=document.getElementById('sidebar-people-list');
   pl.innerHTML=`<div class="section-label">People</div>`+
-    people.map(p=>`<div class="sidebar-item"><span style="width:20px;height:20px;border-radius:50%;background:${avatarColor(p.color_idx)};display:inline-flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:800;color:#fff;flex-shrink:0">${personInitial(p.name)}</span> ${p.name}</div>`).join('');
+    people.map(p=>`<div class="sidebar-item${filterPersonId===p.id?' active':''}" onclick="togglePersonFilter('${p.id}')" style="cursor:pointer"><span style="width:20px;height:20px;border-radius:50%;background:${avatarColor(p.color_idx)};display:inline-flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:800;color:#fff;flex-shrink:0">${personInitial(p.name)}</span> ${p.name}</div>`).join('');
+}
+
+function togglePersonFilter(id){
+  filterPersonId=filterPersonId===id?null:id;
+  renderSidebar();
+  if(activeView==='ledger'){renderStats();renderLedger();}
 }
 
 // ── STATS ─────────────────────────────────────────────────────────
@@ -578,9 +599,11 @@ function renderStats(){
 // ── LEDGER ────────────────────────────────────────────────────────
 function renderLedger(){
   const el=document.getElementById('ledger-area');
+  const visible=filterPersonId?bills.filter(b=>b.payer_person_id===filterPersonId):bills;
   if(!bills.length){el.innerHTML=`<div class="empty"><div class="ei">📋</div>No expenses yet this month.<br>Tap <strong>+ Add expense</strong> to start.</div>`;return;}
+  if(!visible.length){const name=personById(filterPersonId).name;el.innerHTML=`<div class="empty"><div class="ei">📋</div>No expenses from ${name} this month.</div>`;return;}
   let h=`<div class="month-header">${monthLabel(monthKey())}</div>`;
-  bills.forEach(b=>{
+  visible.forEach(b=>{
     const cat=CATMAP[b.category]||CATMAP.other;
     const payer=personById(b.payer_person_id);
     const isYou=b.payer_person_id===myPersonId;
@@ -724,15 +747,79 @@ async function exportCSV(){
   showToast('CSV downloaded!');
 }
 
+// ── REPORTS ───────────────────────────────────────────────────────
+function renderReports(){
+  const el=document.getElementById('reports-area');
+  // Aggregate bills from current month + all history snapshots
+  const allBills=[...bills];
+  history.forEach(h=>{if(h.bills_snapshot)allBills.push(...h.bills_snapshot);});
+  // Deduplicate by id
+  const seen=new Set();
+  const deduped=allBills.filter(b=>{if(!b.id||seen.has(b.id))return false;seen.add(b.id);return true;});
+
+  if(!deduped.length){el.innerHTML=`<div class="report-section"><div class="report-empty">No expense data yet. Add expenses or settle months to see reports.</div></div>`;return;}
+
+  // By category
+  const byCat={};
+  CATS.forEach(c=>{byCat[c.id]=0;});
+  deduped.forEach(b=>{byCat[b.category]=(byCat[b.category]||0)+Number(b.amount||0);});
+  const maxCat=Math.max(...Object.values(byCat),0.01);
+  const catRows=CATS
+    .filter(c=>byCat[c.id]>0)
+    .sort((a,b)=>byCat[b.id]-byCat[a.id])
+    .map(c=>`<div class="report-bar-row">
+      <div class="report-bar-label">${c.icon} ${c.name}</div>
+      <div class="report-bar-track"><div class="report-bar-fill" style="width:${Math.round(byCat[c.id]/maxCat*100)}%"></div></div>
+      <div class="report-bar-value">${fm(byCat[c.id])}</div>
+    </div>`).join('');
+
+  // By month (sorted chronologically)
+  const byMonth={};
+  deduped.forEach(b=>{const mk=b.month||b.date?.slice(0,7);if(mk)byMonth[mk]=(byMonth[mk]||0)+Number(b.amount||0);});
+  const months=Object.keys(byMonth).sort();
+  const maxMonth=Math.max(...Object.values(byMonth),0.01);
+  const monthRows=months.map(mk=>`<div class="report-bar-row">
+    <div class="report-bar-label">${monthLabel(mk)}</div>
+    <div class="report-bar-track"><div class="report-bar-fill blue" style="width:${Math.round(byMonth[mk]/maxMonth*100)}%"></div></div>
+    <div class="report-bar-value">${fm(byMonth[mk])}</div>
+  </div>`).join('');
+
+  // By person
+  const byPerson={};
+  people.forEach(p=>{byPerson[p.id]=0;});
+  deduped.forEach(b=>{if(byPerson[b.payer_person_id]!==undefined)byPerson[b.payer_person_id]+=Number(b.amount||0);});
+  const maxPerson=Math.max(...Object.values(byPerson),0.01);
+  const personRows=people.map(p=>`<div class="report-bar-row">
+    <div class="report-bar-label"><span style="width:16px;height:16px;border-radius:50%;background:${avatarColor(p.color_idx)};display:inline-flex;align-items:center;justify-content:center;font-size:.55rem;font-weight:800;color:#fff;flex-shrink:0;vertical-align:middle">${personInitial(p.name)}</span> ${p.name}</div>
+    <div class="report-bar-track"><div class="report-bar-fill green" style="width:${Math.round(byPerson[p.id]/maxPerson*100)}%"></div></div>
+    <div class="report-bar-value">${fm(byPerson[p.id])}</div>
+  </div>`).join('');
+
+  el.innerHTML=`
+    <div class="report-section">
+      <div class="report-section-title">Spending by Category</div>
+      ${catRows||'<div class="report-empty">No data</div>'}
+    </div>
+    <div class="report-section">
+      <div class="report-section-title">Month Over Month</div>
+      ${monthRows||'<div class="report-empty">No data</div>'}
+    </div>
+    <div class="report-section">
+      <div class="report-section-title">Who Paid What</div>
+      ${personRows||'<div class="report-empty">No data</div>'}
+    </div>`;
+}
+
 // ── TOPBAR ────────────────────────────────────────────────────────
 function renderTopbar(){
-  const titles={ledger:'Winona',recurring:'Recurring Bills',history:'History',people:'People',export:'Export'};
+  const titles={ledger:'Winona',recurring:'Recurring Bills',history:'History',people:'People',export:'Export',reports:'Reports'};
   const subs={
     ledger:monthLabel(monthKey()),
     recurring:`${recurs.length} bills configured`,
     history:`${history.length} months archived`,
     people:`${people.length} people`,
-    export:'Download expenses as CSV'
+    export:'Download expenses as CSV',
+    reports:'Spending trends across all months'
   };
   document.getElementById('tb-title').textContent=titles[activeView]||'Winona';
   document.getElementById('tb-sub').textContent=subs[activeView]||'';
@@ -748,6 +835,7 @@ function render(){
   if(activeView==='history')renderHistory();
   if(activeView==='people')renderPeople();
   if(activeView==='export')renderExport();
+  if(activeView==='reports')renderReports();
 }
 
 // ── DELETE CONFIRMATIONS ──────────────────────────────────────────
@@ -959,10 +1047,11 @@ window.savePerson=async function(){
 
 // ── VIEW SWITCH ───────────────────────────────────────────────────
 function switchView(v){
+  filterPersonId=null;
   activeView=v;
   document.querySelectorAll('.view-panel').forEach(el=>el.classList.remove('active'));
   document.getElementById(`view-${v}`).classList.add('active');
-  ['ledger','recurring','history','people','export'].forEach(n=>{
+  ['ledger','recurring','history','people','export','reports'].forEach(n=>{
     document.getElementById(`sn-${n}`)?.classList.toggle('active',n===v);
     document.getElementById(`mn-${n}`)?.classList.toggle('active',n===v);
   });
