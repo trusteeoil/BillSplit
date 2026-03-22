@@ -1,0 +1,2347 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <title>BillSplit – Winona</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --green: #5bc5a7;
+        --green-dark: #3ea98a;
+        --orange: #e67e5a;
+        --blue: #3d85c8;
+        --red: #e05c5c;
+        --bg: #f4f5f7;
+        --surface: #ffffff;
+        --border: #e2e4e9;
+        --ink: #1a1c21;
+        --muted: #7a8294;
+        --light: #f0f2f5;
+        --font: "Nunito", sans-serif;
+        --sidebar-w: 260px;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        -webkit-tap-highlight-color: transparent;
+      }
+      html {
+        height: 100%;
+      }
+      body {
+        font-family: var(--font);
+        background: var(--bg);
+        color: var(--ink);
+        min-height: 100%;
+      }
+      .layout {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      /* SIDEBAR */
+      .sidebar {
+        width: var(--sidebar-w);
+        background: var(--surface);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        z-index: 50;
+        flex-shrink: 0;
+        overflow-y: auto;
+      }
+      .sidebar-logo {
+        padding: 18px 20px 14px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+      }
+      .logo-icon {
+        width: 34px;
+        height: 34px;
+        background: var(--green);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+      }
+      .logo-text {
+        font-size: 1.1rem;
+        font-weight: 800;
+        letter-spacing: -0.3px;
+      }
+      .logo-sub {
+        font-size: 0.68rem;
+        color: var(--muted);
+        font-weight: 500;
+      }
+      .sidebar-section {
+        padding: 14px 12px 6px;
+      }
+      .section-label {
+        font-size: 0.62rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--muted);
+        font-weight: 700;
+        padding: 0 8px;
+        margin-bottom: 6px;
+      }
+      .sidebar-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 9px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--muted);
+        transition:
+          background 0.15s,
+          color 0.15s;
+      }
+      .sidebar-item:hover {
+        background: var(--light);
+        color: var(--ink);
+      }
+      .sidebar-item.active {
+        background: rgba(91, 197, 167, 0.12);
+        color: var(--green-dark);
+      }
+      .si-icon {
+        font-size: 1rem;
+        width: 20px;
+        text-align: center;
+      }
+      .sidebar-balance {
+        margin-top: auto;
+        padding: 16px;
+        border-top: 1px solid var(--border);
+      }
+      .bal-label {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        font-weight: 700;
+        margin-bottom: 6px;
+      }
+      .bal-amount {
+        font-size: 1.5rem;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+      }
+      .bal-amount.owe {
+        color: var(--orange);
+      }
+      .bal-amount.owed {
+        color: var(--green-dark);
+      }
+      .bal-amount.clear {
+        color: var(--muted);
+      }
+      .bal-sub {
+        font-size: 0.72rem;
+        color: var(--muted);
+        font-weight: 500;
+        margin-top: 2px;
+      }
+      .signout-btn {
+        width: 100%;
+        margin-top: 10px;
+        font-family: var(--font);
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 8px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--light);
+        color: var(--muted);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+      .signout-btn:hover {
+        background: var(--border);
+        color: var(--ink);
+      }
+
+      /* MAIN */
+      .main {
+        margin-left: var(--sidebar-w);
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+      .topbar {
+        background: var(--surface);
+        border-bottom: 1px solid var(--border);
+        padding: 14px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .topbar-left h2 {
+        font-size: 1.15rem;
+        font-weight: 800;
+        letter-spacing: -0.3px;
+      }
+      .topbar-left p {
+        font-size: 0.72rem;
+        color: var(--muted);
+        font-weight: 500;
+        margin-top: 1px;
+      }
+      .topbar-right {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .btn {
+        font-family: var(--font);
+        font-size: 0.82rem;
+        font-weight: 700;
+        padding: 9px 18px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        transition:
+          opacity 0.15s,
+          transform 0.1s;
+        letter-spacing: 0.01em;
+        white-space: nowrap;
+      }
+      .btn:active {
+        transform: scale(0.97);
+      }
+      .btn-primary {
+        background: var(--orange);
+        color: #fff;
+      }
+      .btn-primary:hover {
+        opacity: 0.88;
+      }
+      .btn-secondary {
+        background: var(--green);
+        color: #fff;
+      }
+      .btn-secondary:hover {
+        opacity: 0.88;
+      }
+      .btn-ghost {
+        background: var(--light);
+        color: var(--ink);
+        border: 1px solid var(--border);
+      }
+      .btn-ghost:hover {
+        background: var(--border);
+      }
+      .btn-danger {
+        background: var(--red);
+        color: #fff;
+      }
+      .btn-danger:hover {
+        opacity: 0.88;
+      }
+
+      .content {
+        padding: 24px;
+        flex: 1;
+      }
+      .view-panel {
+        display: none;
+      }
+      .view-panel.active {
+        display: block;
+      }
+      .empty {
+        text-align: center;
+        padding: 48px 20px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+      .empty .ei {
+        font-size: 2.5rem;
+        margin-bottom: 10px;
+      }
+
+      /* LOADING STATE */
+      .page-loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 60px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        font-weight: 600;
+        gap: 10px;
+      }
+      .spinner {
+        width: 20px;
+        height: 20px;
+        border: 3px solid var(--border);
+        border-top-color: var(--green);
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* STATS */
+      .stats-bar {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+      .stat-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 18px;
+        flex: 1;
+        min-width: 110px;
+      }
+      .stat-label {
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+      .stat-value {
+        font-size: 1.3rem;
+        font-weight: 800;
+        letter-spacing: -0.5px;
+      }
+      .stat-value.orange {
+        color: var(--orange);
+      }
+      .stat-value.green {
+        color: var(--green-dark);
+      }
+      .stat-value.blue {
+        color: var(--blue);
+      }
+      .stat-sub {
+        font-size: 0.68rem;
+        color: var(--muted);
+        font-weight: 500;
+        margin-top: 2px;
+      }
+
+      /* EXPENSE ROW */
+      .month-header {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--muted);
+        padding: 0 0 10px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 2px;
+      }
+      .expense-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 11px 6px;
+        border-bottom: 1px solid var(--border);
+        transition: background 0.12s;
+        border-radius: 4px;
+      }
+      .expense-row:hover {
+        background: var(--light);
+      }
+      .exp-date {
+        width: 36px;
+        text-align: center;
+        flex-shrink: 0;
+      }
+      .exp-date-month {
+        font-size: 0.58rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+        font-weight: 700;
+        line-height: 1;
+      }
+      .exp-date-day {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: var(--ink);
+        line-height: 1.1;
+      }
+      .exp-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 9px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        flex-shrink: 0;
+        background: var(--light);
+      }
+      .exp-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .exp-name-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .exp-name {
+        font-size: 0.9rem;
+        font-weight: 700;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .recur-tag {
+        font-size: 0.55rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        background: var(--light);
+        border: 1px solid var(--border);
+        color: var(--muted);
+        padding: 2px 5px;
+        border-radius: 4px;
+        white-space: nowrap;
+      }
+      .exp-sub {
+        font-size: 0.72rem;
+        color: var(--muted);
+        font-weight: 500;
+        margin-top: 1px;
+      }
+      .exp-amounts {
+        text-align: right;
+        flex-shrink: 0;
+      }
+      .exp-total {
+        font-size: 0.75rem;
+        color: var(--muted);
+        font-weight: 500;
+      }
+      .exp-owe {
+        font-size: 0.9rem;
+        font-weight: 800;
+      }
+      .exp-owe.green {
+        color: var(--green-dark);
+      }
+      .exp-owe.orange {
+        color: var(--orange);
+      }
+      .exp-owe-label {
+        font-size: 0.62rem;
+        color: var(--muted);
+        font-weight: 500;
+      }
+      .exp-actions {
+        display: flex;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+      .icon-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+        transition: all 0.15s;
+        color: var(--muted);
+      }
+      .icon-btn:hover {
+        border-color: var(--blue);
+        color: var(--blue);
+        background: rgba(61, 133, 200, 0.07);
+      }
+      .icon-btn.del:hover {
+        border-color: var(--red);
+        color: var(--red);
+        background: rgba(224, 92, 92, 0.07);
+      }
+
+      /* RECURRING */
+      .recur-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 13px 16px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .recur-info {
+        flex: 1;
+      }
+      .recur-name {
+        font-size: 0.9rem;
+        font-weight: 700;
+      }
+      .recur-detail {
+        font-size: 0.7rem;
+        color: var(--muted);
+        font-weight: 500;
+        margin-top: 2px;
+      }
+      .recur-amt {
+        font-size: 1rem;
+        font-weight: 800;
+      }
+
+      /* PEOPLE */
+      .person-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .person-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        font-weight: 800;
+        color: #fff;
+        flex-shrink: 0;
+      }
+      .person-info {
+        flex: 1;
+      }
+      .person-name {
+        font-size: 0.95rem;
+        font-weight: 700;
+      }
+      .person-role {
+        font-size: 0.7rem;
+        color: var(--muted);
+        font-weight: 500;
+        margin-top: 2px;
+      }
+      .person-actions {
+        display: flex;
+        gap: 6px;
+      }
+
+      /* HISTORY */
+      .history-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 10px;
+      }
+      .history-month {
+        font-size: 0.95rem;
+        font-weight: 800;
+        margin-bottom: 8px;
+      }
+      .history-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 3px 0;
+        color: var(--muted);
+      }
+      .history-row span:last-child {
+        color: var(--ink);
+      }
+
+      /* MODAL */
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.45);
+        z-index: 200;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s;
+      }
+      .modal-overlay.open {
+        opacity: 1;
+        pointer-events: all;
+      }
+      .modal {
+        background: var(--surface);
+        border-radius: 16px;
+        padding: 24px;
+        width: 100%;
+        max-width: 480px;
+        max-height: 90vh;
+        overflow-y: auto;
+        transform: translateY(20px) scale(0.97);
+        transition: transform 0.25s cubic-bezier(0.34, 1.2, 0.64, 1);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+      }
+      .modal-overlay.open .modal {
+        transform: translateY(0) scale(1);
+      }
+      .modal-title {
+        font-size: 1.15rem;
+        font-weight: 800;
+        margin-bottom: 20px;
+        letter-spacing: -0.3px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .modal-close {
+        background: var(--light);
+        border: none;
+        border-radius: 6px;
+        width: 28px;
+        height: 28px;
+        cursor: pointer;
+        font-size: 1rem;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .modal-close:hover {
+        background: var(--border);
+        color: var(--ink);
+      }
+
+      .amount-wrap {
+        display: flex;
+        align-items: center;
+        background: var(--light);
+        border-radius: 12px;
+        padding: 14px 18px;
+        margin-bottom: 16px;
+        border: 2px solid transparent;
+        transition: border-color 0.15s;
+      }
+      .amount-wrap:focus-within {
+        border-color: var(--orange);
+      }
+      .amount-sym {
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: var(--muted);
+        margin-right: 6px;
+        line-height: 1;
+      }
+      .amount-input {
+        font-family: var(--font);
+        font-size: 2rem;
+        font-weight: 800;
+        background: none;
+        border: none;
+        outline: none;
+        color: var(--ink);
+        width: 100%;
+        letter-spacing: -1px;
+      }
+      .amount-input::placeholder {
+        color: #ccc;
+      }
+
+      .toggle-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+      }
+      .payer-btn {
+        flex: 1;
+        min-width: 80px;
+        padding: 11px;
+        border-radius: 10px;
+        border: 2px solid var(--border);
+        background: var(--light);
+        font-family: var(--font);
+        font-size: 0.88rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.15s;
+        color: var(--muted);
+      }
+      .payer-btn.sel {
+        border-color: var(--orange);
+        background: rgba(230, 126, 90, 0.1);
+        color: var(--orange);
+      }
+
+      .cat-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+        margin-bottom: 16px;
+      }
+      .cat-btn {
+        background: var(--light);
+        border: 2px solid transparent;
+        border-radius: 10px;
+        padding: 9px 4px 7px;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        transition: all 0.15s;
+      }
+      .cat-btn .ci {
+        font-size: 1.25rem;
+      }
+      .cat-btn .cn {
+        font-family: var(--font);
+        font-size: 0.58rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--muted);
+      }
+      .cat-btn.sel {
+        border-color: var(--orange);
+        background: rgba(230, 126, 90, 0.08);
+      }
+      .cat-btn.sel .cn {
+        color: var(--orange);
+      }
+
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+      .form-row.full {
+        grid-template-columns: 1fr;
+      }
+      .form-label {
+        display: block;
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin-bottom: 5px;
+      }
+      .form-input {
+        width: 100%;
+        background: var(--light);
+        border: 2px solid transparent;
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-family: var(--font);
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--ink);
+        outline: none;
+        transition: border-color 0.15s;
+      }
+      .form-input:focus {
+        border-color: var(--orange);
+      }
+      .form-input option {
+        background: var(--surface);
+      }
+
+      .recur-toggle-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: var(--light);
+        border-radius: 10px;
+        padding: 12px 14px;
+        margin-bottom: 14px;
+        cursor: pointer;
+        user-select: none;
+      }
+      .recur-toggle-label {
+        font-size: 0.88rem;
+        font-weight: 700;
+      }
+      .recur-toggle-sub {
+        font-size: 0.68rem;
+        color: var(--muted);
+        font-weight: 500;
+        margin-top: 2px;
+      }
+      .sw {
+        width: 42px;
+        height: 24px;
+        background: var(--border);
+        border-radius: 12px;
+        position: relative;
+        transition: background 0.2s;
+        flex-shrink: 0;
+      }
+      .sw::after {
+        content: "";
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        background: #fff;
+        border-radius: 50%;
+        top: 3px;
+        left: 3px;
+        transition: transform 0.2s;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+      }
+      .sw.on {
+        background: var(--green);
+      }
+      .sw.on::after {
+        transform: translateX(18px);
+      }
+      .recur-extra {
+        display: none;
+        margin-bottom: 14px;
+      }
+      .recur-extra.vis {
+        display: block;
+      }
+
+      .modal-footer {
+        display: flex;
+        gap: 8px;
+        margin-top: 4px;
+      }
+      .modal-footer .btn {
+        flex: 1;
+        padding: 12px;
+        font-size: 0.9rem;
+      }
+
+      /* Settle */
+      .settle-summary {
+        background: var(--light);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 16px;
+      }
+      .settle-row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.85rem;
+        font-weight: 600;
+        padding: 4px 0;
+      }
+      .settle-row.total {
+        border-top: 1px solid var(--border);
+        margin-top: 8px;
+        padding-top: 10px;
+        font-size: 1rem;
+        font-weight: 800;
+      }
+
+      /* Export */
+      .export-section {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 16px;
+      }
+      .export-title {
+        font-size: 0.95rem;
+        font-weight: 800;
+        margin-bottom: 12px;
+      }
+      .export-row {
+        display: flex;
+        gap: 10px;
+        align-items: flex-end;
+        flex-wrap: wrap;
+      }
+
+      /* Avatar colors */
+      .avatar-0 {
+        background: #e67e5a;
+      }
+      .avatar-1 {
+        background: #3d85c8;
+      }
+      .avatar-2 {
+        background: #5bc5a7;
+      }
+      .avatar-3 {
+        background: #9b59b6;
+      }
+      .avatar-4 {
+        background: #e67e22;
+      }
+
+      /* MOBILE NAV */
+      .mobile-nav {
+        display: none;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: var(--surface);
+        border-top: 1px solid var(--border);
+        z-index: 60;
+        padding: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px));
+        justify-content: space-around;
+      }
+      .mobile-nav-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        background: none;
+        border: none;
+        font-family: var(--font);
+        font-size: 0.6rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--muted);
+        cursor: pointer;
+        padding: 4px 12px;
+        transition: color 0.15s;
+      }
+      .mobile-nav-btn .mni {
+        font-size: 1.3rem;
+      }
+      .mobile-nav-btn.active {
+        color: var(--green-dark);
+      }
+      .mobile-add-btn {
+        width: 52px;
+        height: 52px;
+        background: var(--orange);
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.6rem;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(230, 126, 90, 0.4);
+        margin-top: -12px;
+      }
+
+      /* Confirm dialog */
+      .confirm-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 300;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.15s;
+      }
+      .confirm-overlay.open {
+        opacity: 1;
+        pointer-events: all;
+      }
+      .confirm-box {
+        background: var(--surface);
+        border-radius: 14px;
+        padding: 24px;
+        max-width: 340px;
+        width: 100%;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+        transform: scale(0.96);
+        transition: transform 0.15s;
+      }
+      .confirm-overlay.open .confirm-box {
+        transform: scale(1);
+      }
+      .confirm-title {
+        font-size: 1rem;
+        font-weight: 800;
+        margin-bottom: 8px;
+      }
+      .confirm-msg {
+        font-size: 0.85rem;
+        color: var(--muted);
+        font-weight: 500;
+        margin-bottom: 20px;
+        line-height: 1.5;
+      }
+      .confirm-btns {
+        display: flex;
+        gap: 8px;
+      }
+      .confirm-btns .btn {
+        flex: 1;
+        padding: 11px;
+      }
+
+      /* Toast */
+      .toast {
+        position: fixed;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%) translateY(20px);
+        background: var(--ink);
+        color: #fff;
+        font-size: 0.82rem;
+        font-weight: 700;
+        padding: 10px 20px;
+        border-radius: 10px;
+        z-index: 500;
+        opacity: 0;
+        transition: all 0.3s;
+        pointer-events: none;
+        white-space: nowrap;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+
+      @media (max-width: 680px) {
+        .sidebar {
+          display: none;
+        }
+        .main {
+          margin-left: 0;
+        }
+        .mobile-nav {
+          display: flex;
+        }
+        .content {
+          padding: 14px 12px 100px;
+        }
+        .topbar {
+          padding: 12px 14px;
+        }
+        .topbar .btn-ghost {
+          display: none;
+        }
+        .stats-bar {
+          gap: 8px;
+        }
+        .stat-card {
+          padding: 11px 12px;
+          min-width: 90px;
+        }
+        .stat-value {
+          font-size: 1.05rem;
+        }
+        .form-row {
+          grid-template-columns: 1fr;
+        }
+        .exp-actions {
+          gap: 3px;
+        }
+      }
+      @media (max-width: 400px) {
+        .cat-grid {
+          grid-template-columns: repeat(3, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <!-- SIDEBAR -->
+      <aside class="sidebar">
+        <div class="sidebar-logo">
+          <div class="logo-icon">🏠</div>
+          <div>
+            <div class="logo-text">BillSplit</div>
+            <div class="logo-sub">Winona household</div>
+          </div>
+        </div>
+        <div class="sidebar-section">
+          <div class="section-label">Views</div>
+          <div
+            class="sidebar-item active"
+            id="sn-ledger"
+            onclick="switchView('ledger')"
+          >
+            <span class="si-icon">📋</span> This Month
+          </div>
+          <div
+            class="sidebar-item"
+            id="sn-recurring"
+            onclick="switchView('recurring')"
+          >
+            <span class="si-icon">🔄</span> Recurring Bills
+          </div>
+          <div
+            class="sidebar-item"
+            id="sn-history"
+            onclick="switchView('history')"
+          >
+            <span class="si-icon">📂</span> History
+          </div>
+          <div
+            class="sidebar-item"
+            id="sn-people"
+            onclick="switchView('people')"
+          >
+            <span class="si-icon">👥</span> People
+          </div>
+          <div
+            class="sidebar-item"
+            id="sn-export"
+            onclick="switchView('export')"
+          >
+            <span class="si-icon">📤</span> Export
+          </div>
+        </div>
+        <div class="sidebar-section" id="sidebar-people-list"></div>
+        <div class="sidebar-balance">
+          <div class="bal-label">Your balance</div>
+          <div class="bal-amount" id="sb-amount">—</div>
+          <div class="bal-sub" id="sb-sub"></div>
+          <button class="signout-btn" onclick="signOut()">Sign out</button>
+        </div>
+      </aside>
+
+      <!-- MAIN -->
+      <div class="main">
+        <div class="topbar">
+          <div class="topbar-left">
+            <h2 id="tb-title">Winona</h2>
+            <p id="tb-sub"></p>
+          </div>
+          <div class="topbar-right">
+            <button
+              class="btn btn-ghost"
+              onclick="openSettleModal()"
+              id="settle-btn"
+            >
+              Settle up
+            </button>
+            <button
+              class="btn btn-primary"
+              onclick="openAddModal(false)"
+              id="add-btn"
+            >
+              + Add expense
+            </button>
+          </div>
+        </div>
+        <div class="content">
+          <div class="view-panel active" id="view-ledger">
+            <div class="stats-bar" id="stats-bar"></div>
+            <div id="ledger-area">
+              <div class="page-loading">
+                <div class="spinner"></div>
+                Loading expenses...
+              </div>
+            </div>
+          </div>
+          <div class="view-panel" id="view-recurring">
+            <div
+              style="
+                margin-bottom: 16px;
+                display: flex;
+                justify-content: flex-end;
+              "
+            >
+              <button class="btn btn-primary" onclick="openAddModal(true)">
+                + Add recurring
+              </button>
+            </div>
+            <div id="recur-area"></div>
+          </div>
+          <div class="view-panel" id="view-history">
+            <div id="history-area"></div>
+          </div>
+          <div class="view-panel" id="view-people">
+            <div
+              style="
+                margin-bottom: 16px;
+                display: flex;
+                justify-content: flex-end;
+              "
+            >
+              <button class="btn btn-primary" onclick="openPersonModal()">
+                + Add person
+              </button>
+            </div>
+            <div id="people-area"></div>
+          </div>
+          <div class="view-panel" id="view-export">
+            <div class="export-section">
+              <div class="export-title">Export expenses as CSV</div>
+              <p
+                style="
+                  font-size: 0.82rem;
+                  color: var(--muted);
+                  font-weight: 500;
+                  margin-bottom: 16px;
+                "
+              >
+                Choose a year to export all expenses for that year.
+              </p>
+              <div class="export-row">
+                <div style="flex: 1; min-width: 140px">
+                  <label class="form-label">Year</label>
+                  <select class="form-input" id="export-year"></select>
+                </div>
+                <button class="btn btn-primary" onclick="exportCSV()">
+                  ⬇ Download CSV
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOBILE NAV -->
+    <div class="mobile-nav">
+      <button
+        class="mobile-nav-btn active"
+        id="mn-ledger"
+        onclick="switchView('ledger')"
+      >
+        <span class="mni">📋</span>Month
+      </button>
+      <button class="mobile-add-btn" onclick="openAddModal(false)">+</button>
+      <button
+        class="mobile-nav-btn"
+        id="mn-recurring"
+        onclick="switchView('recurring')"
+      >
+        <span class="mni">🔄</span>Recurring
+      </button>
+    </div>
+
+    <!-- ADD / EDIT EXPENSE MODAL -->
+    <div class="modal-overlay" id="add-overlay">
+      <div class="modal">
+        <div class="modal-title">
+          <span id="add-title">Add expense</span>
+          <button class="modal-close" onclick="closeAddModal()">✕</button>
+        </div>
+        <div class="amount-wrap">
+          <div class="amount-sym">$</div>
+          <input
+            type="number"
+            inputmode="decimal"
+            class="amount-input"
+            id="f-amount"
+            placeholder="0.00"
+            step="0.01"
+            min="0"
+          />
+        </div>
+        <div class="form-label" style="margin-bottom: 6px">Who paid?</div>
+        <div class="toggle-row" id="payer-toggle"></div>
+        <div class="form-label" style="margin-bottom: 6px">Category</div>
+        <div class="cat-grid" id="cat-grid"></div>
+        <div class="form-row full">
+          <div>
+            <label class="form-label">Description (optional)</label>
+            <input
+              type="text"
+              class="form-input"
+              id="f-desc"
+              placeholder="e.g. Publix run"
+            />
+          </div>
+        </div>
+        <div class="form-row full">
+          <div>
+            <label class="form-label">Date</label>
+            <input type="date" class="form-input" id="f-date" />
+          </div>
+        </div>
+        <div class="recur-toggle-row" onclick="toggleRecur()">
+          <div>
+            <div class="recur-toggle-label">Recurring?</div>
+            <div class="recur-toggle-sub">Adds to recurring bills list</div>
+          </div>
+          <div class="sw" id="recur-sw"></div>
+        </div>
+        <div class="recur-extra" id="recur-extra">
+          <div class="form-row">
+            <div>
+              <label class="form-label">Frequency</label>
+              <select class="form-input" id="f-freq">
+                <option value="monthly">Monthly</option>
+                <option value="bimonthly">Every 2 months</option>
+                <option value="quarterly">Quarterly</option>
+                <option value="biannual">Twice a year</option>
+                <option value="annual">Annual</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">Day of Month</label>
+              <input
+                type="number"
+                class="form-input"
+                id="f-day"
+                min="1"
+                max="28"
+                value="1"
+              />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeAddModal()">
+            Cancel
+          </button>
+          <button class="btn btn-primary" id="save-btn" onclick="saveBill()">
+            Add expense
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTLE MODAL -->
+    <div class="modal-overlay" id="settle-overlay">
+      <div class="modal">
+        <div class="modal-title">
+          <span>Settle up — <span id="settle-month-name"></span></span>
+          <button class="modal-close" onclick="closeSettleModal()">✕</button>
+        </div>
+        <div class="settle-summary" id="settle-summary"></div>
+        <p
+          style="
+            font-size: 0.8rem;
+            color: var(--muted);
+            font-weight: 500;
+            margin-bottom: 16px;
+          "
+        >
+          This archives the month and resets the balance to zero.
+        </p>
+        <div class="modal-footer">
+          <button class="btn btn-ghost" onclick="closeSettleModal()">
+            Cancel
+          </button>
+          <button class="btn btn-secondary" onclick="confirmSettle()">
+            ✓ Confirm settle up
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PERSON MODAL -->
+    <div class="modal-overlay" id="person-overlay">
+      <div class="modal" style="max-width: 380px">
+        <div class="modal-title">
+          <span id="person-title">Add person</span>
+          <button class="modal-close" onclick="closePersonModal()">✕</button>
+        </div>
+        <div class="form-row full" style="margin-bottom: 14px">
+          <div>
+            <label class="form-label">Name</label>
+            <input
+              type="text"
+              class="form-input"
+              id="p-name"
+              placeholder="e.g. Angela"
+            />
+          </div>
+        </div>
+        <div class="form-row full">
+          <div>
+            <label class="form-label">Role / Note (optional)</label>
+            <input
+              type="text"
+              class="form-input"
+              id="p-role"
+              placeholder="e.g. Wife, Roommate"
+            />
+          </div>
+        </div>
+        <div class="modal-footer" style="margin-top: 16px">
+          <button class="btn btn-ghost" onclick="closePersonModal()">
+            Cancel
+          </button>
+          <button class="btn btn-primary" onclick="savePerson()">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIRM DIALOG -->
+    <div class="confirm-overlay" id="confirm-overlay">
+      <div class="confirm-box">
+        <div class="confirm-title" id="confirm-title">Are you sure?</div>
+        <div class="confirm-msg" id="confirm-msg"></div>
+        <div class="confirm-btns">
+          <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
+          <button class="btn btn-danger" id="confirm-ok-btn">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      // ── CONFIG — replace these with your actual values ──
+      const SUPABASE_URL = "https://gugwjzypsvlngjkdwwnm.supabase.co";
+      const SUPABASE_KEY = "sb_publishable_J4zTIQr4gVEf-SLD6K9HNA_VodwWdNX";
+      const HOUSEHOLD_ID = "c35db575-9ffe-4d0d-be5b-0ec5264f2206";
+      // ────────────────────────────────────────────────────
+
+      const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+      // ── CONSTANTS ─────────────────────────────────────────────────────
+      const CATS = [
+        { id: "mortgage", icon: "🏠", name: "Mortgage" },
+        { id: "groceries", icon: "🛒", name: "Groceries" },
+        { id: "electric", icon: "💡", name: "Electric" },
+        { id: "internet", icon: "📡", name: "Internet" },
+        { id: "insurance", icon: "🛡️", name: "Insurance" },
+        { id: "streaming", icon: "📺", name: "Streaming" },
+        { id: "gas", icon: "⛽", name: "Gas" },
+        { id: "medical", icon: "💊", name: "Medical" },
+        { id: "baby", icon: "👶", name: "Baby" },
+        { id: "car", icon: "🚗", name: "Car" },
+        { id: "home", icon: "🔨", name: "Home/Yard" },
+        { id: "trash", icon: "🗑️", name: "Trash" },
+        { id: "dining", icon: "🍽️", name: "Dining" },
+        { id: "other", icon: "📦", name: "Other" },
+      ];
+      const CATMAP = Object.fromEntries(CATS.map((c) => [c.id, c]));
+      const FREQLABEL = {
+        monthly: "Monthly",
+        bimonthly: "Every 2 mo.",
+        quarterly: "Quarterly",
+        biannual: "Twice/yr",
+        annual: "Annual",
+      };
+      const AVATAR_COLORS = [
+        "#e67e5a",
+        "#3d85c8",
+        "#5bc5a7",
+        "#9b59b6",
+        "#e67e22",
+      ];
+
+      // ── STATE ─────────────────────────────────────────────────────────
+      let people = [],
+        bills = [],
+        recurs = [],
+        history = [];
+      let activeView = "ledger";
+      let selPayerId = null;
+      let selCat = "groceries";
+      let recurOn = false;
+      let editingId = null;
+      let editingPersonId = null;
+      let myPersonId = null; // the "you" person's DB id
+
+      // ── INIT ──────────────────────────────────────────────────────────
+      async function init() {
+        // Auth guard
+        const {
+          data: { session },
+        } = await sb.auth.getSession();
+        if (!session) {
+          window.location.href = "index.html";
+          return;
+        }
+
+        // Load all data in parallel
+        await Promise.all([
+          loadPeople(),
+          loadBills(),
+          loadRecurs(),
+          loadHistory(),
+        ]);
+
+        // Figure out which person is "you" (is_you=true)
+        const me = people.find((p) => p.is_you);
+        if (me) myPersonId = me.id;
+        selPayerId = myPersonId;
+
+        render();
+      }
+
+      // ── DATA LOADERS ──────────────────────────────────────────────────
+      async function loadPeople() {
+        const { data, error } = await sb
+          .from("people")
+          .select("*")
+          .eq("household_id", HOUSEHOLD_ID)
+          .order("created_at");
+        if (error) {
+          console.error(error);
+          return;
+        }
+        people = data || [];
+      }
+
+      async function loadBills() {
+        const mk = monthKey();
+        const { data, error } = await sb
+          .from("bills")
+          .select("*")
+          .eq("household_id", HOUSEHOLD_ID)
+          .eq("month", mk)
+          .order("date", { ascending: false });
+        if (error) {
+          console.error(error);
+          return;
+        }
+        bills = data || [];
+      }
+
+      async function loadRecurs() {
+        const { data, error } = await sb
+          .from("recurring_bills")
+          .select("*")
+          .eq("household_id", HOUSEHOLD_ID)
+          .order("created_at");
+        if (error) {
+          console.error(error);
+          return;
+        }
+        recurs = data || [];
+      }
+
+      async function loadHistory() {
+        const { data, error } = await sb
+          .from("history")
+          .select("*")
+          .eq("household_id", HOUSEHOLD_ID)
+          .order("created_at", { ascending: false });
+        if (error) {
+          console.error(error);
+          return;
+        }
+        history = data || [];
+      }
+
+      // ── HELPERS ───────────────────────────────────────────────────────
+      function todayStr() {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      }
+      function monthKey() {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      }
+      function monthLabel(key) {
+        const [y, m] = key.split("-");
+        return new Date(+y, +m - 1, 1).toLocaleDateString("en-US", {
+          month: "long",
+          year: "numeric",
+        });
+      }
+      function fm(n) {
+        return (
+          "$" +
+          Math.abs(n).toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })
+        );
+      }
+      function personById(id) {
+        return (
+          people.find((p) => p.id === id) || { name: "Unknown", color_idx: 0 }
+        );
+      }
+      function personInitial(name) {
+        return (name || "?")[0].toUpperCase();
+      }
+      function avatarColor(idx) {
+        return AVATAR_COLORS[(idx || 0) % AVATAR_COLORS.length];
+      }
+
+      function calcBal() {
+        const paid = {};
+        people.forEach((p) => {
+          paid[p.id] = 0;
+        });
+        bills.forEach((b) => {
+          if (paid[b.payer_person_id] !== undefined)
+            paid[b.payer_person_id] += Number(b.amount);
+          else paid[b.payer_person_id] = Number(b.amount);
+        });
+        const total = Object.values(paid).reduce((a, b) => a + b, 0);
+        const youPaid = paid[myPersonId] || 0;
+        const othersPaid = total - youPaid;
+        const balance = (youPaid - othersPaid) / 2;
+        return { balance, paid, total };
+      }
+
+      function showToast(msg) {
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.classList.add("show");
+        setTimeout(() => t.classList.remove("show"), 2500);
+      }
+
+      // ── AUTH ──────────────────────────────────────────────────────────
+      async function signOut() {
+        await sb.auth.signOut();
+        window.location.href = "index.html";
+      }
+
+      // ── CONFIRM DIALOG ────────────────────────────────────────────────
+      let confirmCallback = null;
+      function showConfirm(title, msg, okLabel, cb) {
+        confirmCallback = cb;
+        document.getElementById("confirm-title").textContent = title;
+        document.getElementById("confirm-msg").textContent = msg;
+        document.getElementById("confirm-ok-btn").textContent =
+          okLabel || "Delete";
+        document.getElementById("confirm-overlay").classList.add("open");
+      }
+      function closeConfirm() {
+        document.getElementById("confirm-overlay").classList.remove("open");
+        confirmCallback = null;
+      }
+      document
+        .getElementById("confirm-ok-btn")
+        .addEventListener("click", () => {
+          if (confirmCallback) confirmCallback();
+          closeConfirm();
+        });
+
+      // ── SIDEBAR ───────────────────────────────────────────────────────
+      function renderSidebar() {
+        const { balance } = calcBal();
+        const el = document.getElementById("sb-amount");
+        const sub = document.getElementById("sb-sub");
+        if (Math.abs(balance) < 0.01) {
+          el.textContent = "All square!";
+          el.className = "bal-amount clear";
+          sub.textContent = "No balance this month";
+        } else if (balance > 0) {
+          el.textContent = fm(balance);
+          el.className = "bal-amount owed";
+          sub.textContent = "Others owe you";
+        } else {
+          el.textContent = fm(balance);
+          el.className = "bal-amount owe";
+          sub.textContent = "You owe others";
+        }
+
+        const pl = document.getElementById("sidebar-people-list");
+        pl.innerHTML =
+          `<div class="section-label">People</div>` +
+          people
+            .map(
+              (p) =>
+                `<div class="sidebar-item"><span style="width:20px;height:20px;border-radius:50%;background:${avatarColor(p.color_idx)};display:inline-flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:800;color:#fff;flex-shrink:0">${personInitial(p.name)}</span> ${p.name}</div>`,
+            )
+            .join("");
+      }
+
+      // ── STATS ─────────────────────────────────────────────────────────
+      function renderStats() {
+        const { balance, paid, total } = calcBal();
+        const bc = balance > 0.01 ? "green" : balance < -0.01 ? "orange" : "";
+        const bl =
+          balance > 0.01
+            ? "Others owe you"
+            : balance < -0.01
+              ? "You owe others"
+              : "All square";
+        const youPaid = paid[myPersonId] || 0;
+        let html = `
+    <div class="stat-card"><div class="stat-label">Balance</div><div class="stat-value ${bc}">${fm(balance)}</div><div class="stat-sub">${bl}</div></div>
+    <div class="stat-card"><div class="stat-label">You paid</div><div class="stat-value orange">${fm(youPaid)}</div><div class="stat-sub">This month</div></div>`;
+        people
+          .filter((p) => !p.is_you)
+          .forEach((p) => {
+            html += `<div class="stat-card"><div class="stat-label">${p.name} paid</div><div class="stat-value blue">${fm(paid[p.id] || 0)}</div><div class="stat-sub">This month</div></div>`;
+          });
+        html += `<div class="stat-card"><div class="stat-label">Total bills</div><div class="stat-value">${fm(total)}</div><div class="stat-sub">${bills.length} expenses</div></div>`;
+        document.getElementById("stats-bar").innerHTML = html;
+      }
+
+      // ── LEDGER ────────────────────────────────────────────────────────
+      function renderLedger() {
+        const el = document.getElementById("ledger-area");
+        if (!bills.length) {
+          el.innerHTML = `<div class="empty"><div class="ei">📋</div>No expenses yet this month.<br>Tap <strong>+ Add expense</strong> to start.</div>`;
+          return;
+        }
+        let h = `<div class="month-header">${monthLabel(monthKey())}</div>`;
+        bills.forEach((b) => {
+          const cat = CATMAP[b.category] || CATMAP.other;
+          const payer = personById(b.payer_person_id);
+          const isYou = b.payer_person_id === myPersonId;
+          const [, , day] = b.date.split("-");
+          const mo = new Date(b.date + "T00:00:00")
+            .toLocaleDateString("en-US", { month: "short" })
+            .toUpperCase();
+          const owe = Number(b.amount) / 2;
+          const otherNames = people
+            .filter((p) => !p.is_you)
+            .map((p) => p.name)
+            .join("/");
+          const oweLabel = isYou
+            ? `you lent ${otherNames}`
+            : `${payer.name} lent you`;
+          const oweClass = isYou ? "orange" : "green";
+          const payerStr = isYou ? "you paid" : `${payer.name} paid`;
+          h += `<div class="expense-row">
+      <div class="exp-date"><div class="exp-date-month">${mo}</div><div class="exp-date-day">${+day}</div></div>
+      <div class="exp-icon">${cat.icon}</div>
+      <div class="exp-info">
+        <div class="exp-name-row"><div class="exp-name">${b.name}</div>${b.recur_id ? '<span class="recur-tag">Recurring</span>' : ""}</div>
+        <div class="exp-sub">${payerStr}</div>
+      </div>
+      <div class="exp-amounts">
+        <div class="exp-total">${fm(Number(b.amount))}</div>
+        <div class="exp-owe ${oweClass}">${fm(owe)}</div>
+        <div class="exp-owe-label">${oweLabel}</div>
+      </div>
+      <div class="exp-actions">
+        <button class="icon-btn" title="Edit" onclick="editBill('${b.id}')">✏️</button>
+        <button class="icon-btn del" title="Delete" onclick="askDeleteBill('${b.id}','${b.name.replace(/'/g, "\\'")}')">🗑</button>
+      </div>
+    </div>`;
+        });
+        el.innerHTML = h;
+      }
+
+      // ── RECURRING ─────────────────────────────────────────────────────
+      function renderRecurring() {
+        const el = document.getElementById("recur-area");
+        if (!recurs.length) {
+          el.innerHTML = `<div class="empty"><div class="ei">🔄</div>No recurring bills set up yet.</div>`;
+          return;
+        }
+        let h = "";
+        recurs.forEach((r) => {
+          const cat = CATMAP[r.category] || CATMAP.other;
+          const payer = personById(r.payer_person_id);
+          h += `<div class="recur-card">
+      <div style="font-size:1.3rem;width:36px;text-align:center;flex-shrink:0">${cat.icon}</div>
+      <div class="recur-info">
+        <div class="recur-name">${r.name}</div>
+        <div class="recur-detail">${FREQLABEL[r.frequency] || r.frequency} · day ${r.day_of_month} · ${payer.name} pays</div>
+      </div>
+      <div class="recur-amt">${r.amount > 0 ? fm(r.amount) : "—"}</div>
+      <button class="icon-btn" onclick="editRecur('${r.id}')" title="Edit">✏️</button>
+      <button class="icon-btn del" onclick="askDeleteRecur('${r.id}','${r.name.replace(/'/g, "\\'")}')">🗑</button>
+    </div>`;
+        });
+        el.innerHTML = h;
+      }
+
+      // ── HISTORY ───────────────────────────────────────────────────────
+      function renderHistory() {
+        const el = document.getElementById("history-area");
+        if (!history.length) {
+          el.innerHTML = `<div class="empty"><div class="ei">📂</div>No history yet. Settle up at month end to archive.</div>`;
+          return;
+        }
+        let h = "";
+        history.forEach((hh) => {
+          const bal = Number(hh.balance);
+          const balLine =
+            bal > 0.01
+              ? `Others owed you ${fm(bal)}`
+              : bal < -0.01
+                ? `You owed others ${fm(Math.abs(bal))}`
+                : "All square";
+          let paidRows = "";
+          if (hh.paid_summary) {
+            Object.entries(hh.paid_summary).forEach(([id, amt]) => {
+              const p = personById(id);
+              paidRows += `<div class="history-row"><span>${p.name} paid</span><span>${fm(Number(amt))}</span></div>`;
+            });
+          }
+          h += `<div class="history-card">
+      <div class="history-month">${hh.month_label}</div>
+      ${paidRows}
+      <div class="history-row"><span>Total expenses</span><span>${fm(Number(hh.total))}</span></div>
+      <div class="history-row"><span>Settlement</span><span>${balLine}</span></div>
+      <div class="history-row"><span>Settled on</span><span>${hh.settled_on}</span></div>
+    </div>`;
+        });
+        el.innerHTML = h;
+      }
+
+      // ── PEOPLE ────────────────────────────────────────────────────────
+      function renderPeople() {
+        const el = document.getElementById("people-area");
+        let h = "";
+        people.forEach((p) => {
+          const color = avatarColor(p.color_idx);
+          h += `<div class="person-card">
+      <div class="person-avatar" style="background:${color}">${personInitial(p.name)}</div>
+      <div class="person-info">
+        <div class="person-name">${p.name}${p.is_you ? " (You)" : ""}</div>
+        <div class="person-role">${p.role || "Household member"}</div>
+      </div>
+      <div class="person-actions">
+        <button class="icon-btn" onclick="openPersonModal('${p.id}')" title="Edit">✏️</button>
+        ${!p.is_you ? `<button class="icon-btn del" onclick="askDeletePerson('${p.id}','${p.name.replace(/'/g, "\\'")}')">🗑</button>` : ""}
+      </div>
+    </div>`;
+        });
+        el.innerHTML =
+          h ||
+          `<div class="empty"><div class="ei">👥</div>No people added yet.</div>`;
+      }
+
+      // ── EXPORT ────────────────────────────────────────────────────────
+      function renderExport() {
+        const sel = document.getElementById("export-year");
+        const years = new Set();
+        const y = new Date().getFullYear();
+        years.add(y);
+        years.add(y - 1);
+        bills.forEach((b) => {
+          if (b.date) years.add(+b.date.slice(0, 4));
+        });
+        history.forEach((h) => {
+          if (h.month_key) years.add(+h.month_key.slice(0, 4));
+        });
+        sel.innerHTML = [...years]
+          .sort((a, b) => b - a)
+          .map((y) => `<option value="${y}">${y}</option>`)
+          .join("");
+      }
+
+      async function exportCSV() {
+        const year = parseInt(document.getElementById("export-year").value);
+        // Pull all bills for year from DB
+        const { data } = await sb
+          .from("bills")
+          .select("*")
+          .eq("household_id", HOUSEHOLD_ID)
+          .gte("date", `${year}-01-01`)
+          .lte("date", `${year}-12-31`)
+          .order("date");
+        // Also include bills from history snapshots
+        let allBills = [...(data || [])];
+        history.forEach((h) => {
+          if (
+            h.bills_snapshot &&
+            h.month_key &&
+            h.month_key.startsWith(year + "")
+          ) {
+            allBills = [...allBills, ...(h.bills_snapshot || [])];
+          }
+        });
+        const seen = new Set();
+        allBills = allBills.filter((b) => {
+          if (seen.has(b.id)) return false;
+          seen.add(b.id);
+          return true;
+        });
+        if (!allBills.length) {
+          showToast(`No expenses found for ${year}`);
+          return;
+        }
+        const headers = [
+          "Date",
+          "Description",
+          "Category",
+          "Paid By",
+          "Total Amount",
+          ...people.map((p) => `${p.name}'s Share`),
+        ];
+        const rows = allBills.map((b) => {
+          const cat = CATMAP[b.category] || CATMAP.other;
+          const payer = personById(b.payer_person_id);
+          const amt = Number(b.amount || 0);
+          const share = (amt / people.length).toFixed(2);
+          return [
+            b.date,
+            `"${(b.name || "").replace(/"/g, '""')}"`,
+            `"${cat.name}"`,
+            payer.name,
+            amt.toFixed(2),
+            ...people.map(() => share),
+          ].join(",");
+        });
+        const csv = [headers.join(","), ...rows].join("\n");
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `winona-expenses-${year}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast("CSV downloaded!");
+      }
+
+      // ── TOPBAR ────────────────────────────────────────────────────────
+      function renderTopbar() {
+        const titles = {
+          ledger: "Winona",
+          recurring: "Recurring Bills",
+          history: "History",
+          people: "People",
+          export: "Export",
+        };
+        const subs = {
+          ledger: monthLabel(monthKey()),
+          recurring: `${recurs.length} bills configured`,
+          history: `${history.length} months archived`,
+          people: `${people.length} people`,
+          export: "Download expenses as CSV",
+        };
+        document.getElementById("tb-title").textContent =
+          titles[activeView] || "Winona";
+        document.getElementById("tb-sub").textContent = subs[activeView] || "";
+        const showTopBtns = activeView === "ledger";
+        document.getElementById("settle-btn").style.display = showTopBtns
+          ? ""
+          : "none";
+        document.getElementById("add-btn").style.display = showTopBtns
+          ? ""
+          : "none";
+      }
+
+      function render() {
+        renderSidebar();
+        renderTopbar();
+        if (activeView === "ledger") {
+          renderStats();
+          renderLedger();
+        }
+        if (activeView === "recurring") renderRecurring();
+        if (activeView === "history") renderHistory();
+        if (activeView === "people") renderPeople();
+        if (activeView === "export") renderExport();
+      }
+
+      // ── DELETE CONFIRMATIONS ──────────────────────────────────────────
+      window.askDeleteBill = function (id, name) {
+        showConfirm(
+          "Delete expense?",
+          `Remove "${name}" from the ledger? This cannot be undone.`,
+          "Delete",
+          async () => {
+            await sb.from("bills").delete().eq("id", id);
+            await loadBills();
+            render();
+            showToast("Expense deleted");
+          },
+        );
+      };
+      window.askDeleteRecur = function (id, name) {
+        showConfirm(
+          "Delete recurring bill?",
+          `Remove "${name}" from recurring bills?`,
+          "Delete",
+          async () => {
+            await sb.from("recurring_bills").delete().eq("id", id);
+            await loadRecurs();
+            render();
+            showToast("Recurring bill deleted");
+          },
+        );
+      };
+      window.askDeletePerson = function (id, name) {
+        showConfirm(
+          "Remove person?",
+          `Remove "${name}" from the household?`,
+          "Remove",
+          async () => {
+            await sb.from("people").delete().eq("id", id);
+            await loadPeople();
+            render();
+            showToast("Person removed");
+          },
+        );
+      };
+
+      // ── SETTLE ────────────────────────────────────────────────────────
+      function openSettleModal() {
+        const { balance, paid, total } = calcBal();
+        document.getElementById("settle-month-name").textContent =
+          monthLabel(monthKey());
+        const bal = Number(balance);
+        const balLine =
+          bal > 0.01
+            ? `Others owe you ${fm(bal)}`
+            : bal < -0.01
+              ? `You owe others ${fm(Math.abs(bal))}`
+              : "All square — no payment needed";
+        let paidRows = "";
+        Object.entries(paid).forEach(([id, amt]) => {
+          const p = personById(id);
+          paidRows += `<div class="settle-row"><span>${p.name} paid</span><span>${fm(amt)}</span></div>`;
+        });
+        document.getElementById("settle-summary").innerHTML =
+          `${paidRows}<div class="settle-row"><span>Total expenses</span><span>${fm(total)}</span></div><div class="settle-row total"><span>Settlement</span><span>${balLine}</span></div>`;
+        document.getElementById("settle-overlay").classList.add("open");
+      }
+      function closeSettleModal() {
+        document.getElementById("settle-overlay").classList.remove("open");
+      }
+
+      window.confirmSettle = async function () {
+        const { balance, paid, total } = calcBal();
+        const mk = monthKey();
+        await sb.from("history").insert({
+          household_id: HOUSEHOLD_ID,
+          month_key: mk,
+          month_label: monthLabel(mk),
+          balance,
+          total,
+          paid_summary: paid,
+          bills_snapshot: bills,
+          settled_on: new Date().toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          }),
+        });
+        await sb
+          .from("bills")
+          .delete()
+          .eq("household_id", HOUSEHOLD_ID)
+          .eq("month", mk);
+        await Promise.all([loadBills(), loadHistory()]);
+        closeSettleModal();
+        render();
+        showToast("Month settled and archived!");
+      };
+
+      // ── ADD / EDIT BILL ───────────────────────────────────────────────
+      function buildPayerToggle() {
+        const el = document.getElementById("payer-toggle");
+        el.innerHTML = people
+          .map(
+            (p) =>
+              `<button class="payer-btn${p.id === selPayerId ? " sel" : ""}" data-pid="${p.id}" onclick="setPayer('${p.id}')">${p.name}</button>`,
+          )
+          .join("");
+      }
+
+      function openAddModal(forRecur) {
+        editingId = null;
+        document.getElementById("f-amount").value = "";
+        document.getElementById("f-desc").value = "";
+        document.getElementById("f-date").value = todayStr();
+        selPayerId = myPersonId;
+        selCat = "groceries";
+        recurOn = !!forRecur;
+        document.getElementById("recur-sw").classList.toggle("on", recurOn);
+        document.getElementById("recur-extra").classList.toggle("vis", recurOn);
+        document.getElementById("add-title").textContent = forRecur
+          ? "Add recurring bill"
+          : "Add expense";
+        document.getElementById("save-btn").textContent = forRecur
+          ? "Add recurring bill"
+          : "Add expense";
+        buildPayerToggle();
+        buildCatGrid();
+        document.getElementById("add-overlay").classList.add("open");
+        setTimeout(() => document.getElementById("f-amount").focus(), 300);
+      }
+      function closeAddModal() {
+        document.getElementById("add-overlay").classList.remove("open");
+        editingId = null;
+      }
+
+      window.editBill = function (id) {
+        const b = bills.find((b) => b.id === id);
+        if (!b) return;
+        editingId = id;
+        document.getElementById("f-amount").value = b.amount;
+        document.getElementById("f-desc").value = b.name;
+        document.getElementById("f-date").value = b.date;
+        selPayerId = b.payer_person_id;
+        selCat = b.category;
+        recurOn = false;
+        document.getElementById("recur-sw").classList.remove("on");
+        document.getElementById("recur-extra").classList.remove("vis");
+        document.getElementById("add-title").textContent = "Edit expense";
+        document.getElementById("save-btn").textContent = "Save changes";
+        buildPayerToggle();
+        buildCatGrid();
+        document.getElementById("add-overlay").classList.add("open");
+      };
+
+      window.editRecur = function (id) {
+        const r = recurs.find((r) => r.id === id);
+        if (!r) return;
+        editingId = "recur:" + id;
+        document.getElementById("f-amount").value = r.amount;
+        document.getElementById("f-desc").value = r.name;
+        document.getElementById("f-date").value = todayStr();
+        selPayerId = r.payer_person_id;
+        selCat = r.category;
+        recurOn = true;
+        document.getElementById("recur-sw").classList.add("on");
+        document.getElementById("recur-extra").classList.add("vis");
+        document.getElementById("f-freq").value = r.frequency;
+        document.getElementById("f-day").value = r.day_of_month;
+        document.getElementById("add-title").textContent =
+          "Edit recurring bill";
+        document.getElementById("save-btn").textContent = "Save changes";
+        buildPayerToggle();
+        buildCatGrid();
+        document.getElementById("add-overlay").classList.add("open");
+      };
+
+      window.saveBill = async function () {
+        const amount = parseFloat(document.getElementById("f-amount").value);
+        if (!amount || amount <= 0) {
+          showToast("Please enter a valid amount.");
+          return;
+        }
+        const rawDesc = document.getElementById("f-desc").value.trim();
+        const cat = CATMAP[selCat] || CATMAP.other;
+        const name = rawDesc || cat.name;
+        const dateVal = document.getElementById("f-date").value || todayStr();
+        const billMonth = dateVal.slice(0, 7);
+
+        document.getElementById("save-btn").textContent = "Saving...";
+        document.getElementById("save-btn").disabled = true;
+
+        if (editingId) {
+          if (editingId.startsWith("recur:")) {
+            const rid = editingId.slice(6);
+            await sb
+              .from("recurring_bills")
+              .update({
+                name,
+                category: selCat,
+                amount,
+                payer_person_id: selPayerId,
+                frequency: document.getElementById("f-freq").value,
+                day_of_month:
+                  parseInt(document.getElementById("f-day").value) || 1,
+              })
+              .eq("id", rid);
+            await loadRecurs();
+          } else {
+            await sb
+              .from("bills")
+              .update({
+                name,
+                category: selCat,
+                amount,
+                payer_person_id: selPayerId,
+                date: dateVal,
+                month: billMonth,
+              })
+              .eq("id", editingId);
+            await loadBills();
+          }
+        } else {
+          if (recurOn) {
+            const { data: nr } = await sb
+              .from("recurring_bills")
+              .insert({
+                household_id: HOUSEHOLD_ID,
+                name,
+                category: selCat,
+                amount,
+                payer_person_id: selPayerId,
+                frequency: document.getElementById("f-freq").value,
+                day_of_month:
+                  parseInt(document.getElementById("f-day").value) || 1,
+              })
+              .select()
+              .single();
+            await sb
+              .from("bills")
+              .insert({
+                household_id: HOUSEHOLD_ID,
+                recur_id: nr.id,
+                name,
+                category: selCat,
+                amount,
+                payer_person_id: selPayerId,
+                date: dateVal,
+                month: billMonth,
+              });
+            await Promise.all([loadRecurs(), loadBills()]);
+          } else {
+            await sb
+              .from("bills")
+              .insert({
+                household_id: HOUSEHOLD_ID,
+                name,
+                category: selCat,
+                amount,
+                payer_person_id: selPayerId,
+                date: dateVal,
+                month: billMonth,
+              });
+            await loadBills();
+          }
+        }
+
+        document.getElementById("save-btn").textContent = "Save changes";
+        document.getElementById("save-btn").disabled = false;
+        closeAddModal();
+        render();
+        showToast(editingId ? "Saved!" : "Expense added!");
+      };
+
+      function setPayer(id) {
+        selPayerId = id;
+        document
+          .querySelectorAll(".payer-btn")
+          .forEach((b) => b.classList.toggle("sel", b.dataset.pid === id));
+      }
+
+      window.toggleRecur = function () {
+        recurOn = !recurOn;
+        document.getElementById("recur-sw").classList.toggle("on", recurOn);
+        document.getElementById("recur-extra").classList.toggle("vis", recurOn);
+      };
+
+      // ── CATEGORY GRID ─────────────────────────────────────────────────
+      function buildCatGrid() {
+        const cg = document.getElementById("cat-grid");
+        cg.innerHTML = "";
+        CATS.forEach((c) => {
+          const b = document.createElement("button");
+          b.className = `cat-btn${c.id === selCat ? " sel" : ""}`;
+          b.dataset.cat = c.id;
+          b.innerHTML = `<span class="ci">${c.icon}</span><span class="cn">${c.name}</span>`;
+          b.onclick = () => {
+            selCat = c.id;
+            document
+              .querySelectorAll(".cat-btn")
+              .forEach((x) =>
+                x.classList.toggle("sel", x.dataset.cat === c.id),
+              );
+          };
+          cg.appendChild(b);
+        });
+      }
+
+      // ── PERSON MODAL ──────────────────────────────────────────────────
+      function openPersonModal(id) {
+        editingPersonId = id || null;
+        if (id) {
+          const p = people.find((p) => p.id === id);
+          document.getElementById("p-name").value = p ? p.name : "";
+          document.getElementById("p-role").value = p ? p.role : "";
+          document.getElementById("person-title").textContent = "Edit person";
+        } else {
+          document.getElementById("p-name").value = "";
+          document.getElementById("p-role").value = "";
+          document.getElementById("person-title").textContent = "Add person";
+        }
+        document.getElementById("person-overlay").classList.add("open");
+        setTimeout(() => document.getElementById("p-name").focus(), 300);
+      }
+      function closePersonModal() {
+        document.getElementById("person-overlay").classList.remove("open");
+        editingPersonId = null;
+      }
+
+      window.savePerson = async function () {
+        const name = document.getElementById("p-name").value.trim();
+        if (!name) {
+          showToast("Please enter a name.");
+          return;
+        }
+        const role = document.getElementById("p-role").value.trim();
+        if (editingPersonId) {
+          await sb
+            .from("people")
+            .update({ name, role })
+            .eq("id", editingPersonId);
+        } else {
+          const colorIdx = people.length % AVATAR_COLORS.length;
+          await sb
+            .from("people")
+            .insert({
+              household_id: HOUSEHOLD_ID,
+              name,
+              role,
+              color_idx: colorIdx,
+              is_you: false,
+            });
+        }
+        await loadPeople();
+        closePersonModal();
+        render();
+        showToast("Saved!");
+      };
+
+      // ── VIEW SWITCH ───────────────────────────────────────────────────
+      function switchView(v) {
+        activeView = v;
+        document
+          .querySelectorAll(".view-panel")
+          .forEach((el) => el.classList.remove("active"));
+        document.getElementById(`view-${v}`).classList.add("active");
+        ["ledger", "recurring", "history", "people", "export"].forEach((n) => {
+          document
+            .getElementById(`sn-${n}`)
+            ?.classList.toggle("active", n === v);
+          document
+            .getElementById(`mn-${n}`)
+            ?.classList.toggle("active", n === v);
+        });
+        render();
+      }
+
+      // Close modals on overlay click
+      ["add-overlay", "settle-overlay", "person-overlay"].forEach((id) => {
+        document.getElementById(id).addEventListener("click", (e) => {
+          if (e.target === document.getElementById(id)) {
+            if (id === "add-overlay") closeAddModal();
+            else if (id === "settle-overlay") closeSettleModal();
+            else if (id === "person-overlay") closePersonModal();
+          }
+        });
+      });
+
+      buildCatGrid();
+      init();
+    </script>
+  </body>
+</html>
