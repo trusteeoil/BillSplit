@@ -830,7 +830,7 @@ function renderReports(){
     const mbills=billsByMonth[mk];
     const byCat={};
     mbills.forEach(b=>{byCat[b.category]=(byCat[b.category]||0)+Number(b.amount||0);});
-    const maxCat=Math.max(...Object.values(byCat),0.01);
+    const maxCat=monthTotals[mk]||0.01;
     const rows=CATS
       .filter(c=>byCat[c.id]>0)
       .sort((a,b)=>byCat[b.id]-byCat[a.id])
