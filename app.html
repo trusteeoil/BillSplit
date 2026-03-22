@@ -510,8 +510,7 @@ async function loadPeople(){
 }
 
 async function loadBills(){
-  const mk=monthKey();
-  const{data,error}=await sb.from('bills').select('*').eq('household_id',HOUSEHOLD_ID).eq('month',mk).order('date',{ascending:false});
+  const{data,error}=await sb.from('bills').select('*').eq('household_id',HOUSEHOLD_ID).order('date',{ascending:false});
   if(error){console.error(error);return;}
   bills=data||[];
 }
@@ -608,9 +607,9 @@ function renderStats(){
   const youPaid=paid[myPersonId]||0;
   let html=`
     <div class="stat-card"><div class="stat-label">Balance</div><div class="stat-value ${bc}">${fm(balance)}</div><div class="stat-sub">${bl}</div></div>
-    <div class="stat-card"><div class="stat-label">You paid</div><div class="stat-value orange">${fm(youPaid)}</div><div class="stat-sub">This month</div></div>`;
+    <div class="stat-card"><div class="stat-label">You paid</div><div class="stat-value orange">${fm(youPaid)}</div><div class="stat-sub">Outstanding</div></div>`;
   people.filter(p=>!p.is_you).forEach(p=>{
-    html+=`<div class="stat-card"><div class="stat-label">${p.name} paid</div><div class="stat-value blue">${fm(paid[p.id]||0)}</div><div class="stat-sub">This month</div></div>`;
+    html+=`<div class="stat-card"><div class="stat-label">${p.name} paid</div><div class="stat-value blue">${fm(paid[p.id]||0)}</div><div class="stat-sub">Outstanding</div></div>`;
   });
   html+=`<div class="stat-card"><div class="stat-label">Total bills</div><div class="stat-value">${fm(total)}</div><div class="stat-sub">${bills.length} expenses</div></div>`;
   document.getElementById('stats-bar').innerHTML=html;
@@ -620,38 +619,51 @@ function renderStats(){
 function renderLedger(){
   const el=document.getElementById('ledger-area');
   const visible=filterPersonId?bills.filter(b=>b.payer_person_id===filterPersonId):bills;
-  if(!bills.length){el.innerHTML=`<div class="empty"><div class="ei">📋</div>No expenses yet this month.<br>Tap <strong>+ Add expense</strong> to start.</div>`;return;}
-  if(!visible.length){const name=personById(filterPersonId).name;el.innerHTML=`<div class="empty"><div class="ei">📋</div>No expenses from ${name} this month.</div>`;return;}
-  let h=`<div class="month-header">${monthLabel(monthKey())}</div>`;
+  if(!bills.length){el.innerHTML=`<div class="empty"><div class="ei">📋</div>No expenses yet.<br>Tap <strong>+ Add expense</strong> to start.</div>`;return;}
+  if(!visible.length){const name=personById(filterPersonId).name;el.innerHTML=`<div class="empty"><div class="ei">📋</div>No expenses from ${name}.</div>`;return;}
+
+  // Group by month (bills already sorted date DESC from DB)
+  const byMonth={};
+  const monthOrder=[];
   visible.forEach(b=>{
-    const cat=CATMAP[b.category]||CATMAP.other;
-    const payer=personById(b.payer_person_id);
-    const isYou=b.payer_person_id===myPersonId;
-    const[,,day]=b.date.split('-');
-    const mo=new Date(b.date+'T00:00:00').toLocaleDateString('en-US',{month:'short'}).toUpperCase();
-    const pct=(b.split_pct??50)/100;
-    const owe=Number(b.amount)*pct;
-    const otherNames=people.filter(p=>!p.is_you).map(p=>p.name).join('/');
-    const oweLabel=isYou?`you lent ${otherNames}`:`${payer.name} lent you`;
-    const oweClass=isYou?'orange':'green';
-    const payerStr=isYou?'you paid':`${payer.name} paid`;
-    const oweHtml=`<div class="exp-owe ${oweClass}">${fm(owe)}</div><div class="exp-owe-label">${oweLabel}</div>`;
-    h+=`<div class="expense-row">
-      <div class="exp-date"><div class="exp-date-month">${mo}</div><div class="exp-date-day">${+day}</div></div>
-      <div class="exp-icon">${cat.icon}</div>
-      <div class="exp-info">
-        <div class="exp-name-row"><div class="exp-name">${b.name}</div>${b.recur_id?'<span class="recur-tag" title="Recurring">🔄</span>':''}</div>
-        <div class="exp-sub">${payerStr}</div>
-      </div>
-      <div class="exp-amounts">
-        <div class="exp-total">${fm(Number(b.amount))}</div>
-        ${oweHtml}
-      </div>
-      <div class="exp-actions">
-        <button class="icon-btn" title="Edit" onclick="editBill('${b.id}')">✏️</button>
-        <button class="icon-btn del" title="Delete" onclick="askDeleteBill('${b.id}','${b.name.replace(/'/g,"\\'")}')">🗑</button>
-      </div>
-    </div>`;
+    const mk=b.month||b.date.slice(0,7);
+    if(!byMonth[mk]){byMonth[mk]=[];monthOrder.push(mk);}
+    byMonth[mk].push(b);
+  });
+
+  const otherNames=people.filter(p=>!p.is_you).map(p=>p.name).join('/');
+  let h='';
+  monthOrder.forEach(mk=>{
+    h+=`<div class="month-header">${monthLabel(mk)}</div>`;
+    byMonth[mk].forEach(b=>{
+      const cat=CATMAP[b.category]||CATMAP.other;
+      const payer=personById(b.payer_person_id);
+      const isYou=b.payer_person_id===myPersonId;
+      const[,,day]=b.date.split('-');
+      const mo=new Date(b.date+'T00:00:00').toLocaleDateString('en-US',{month:'short'}).toUpperCase();
+      const pct=(b.split_pct??50)/100;
+      const owe=Number(b.amount)*pct;
+      const oweLabel=isYou?`you lent ${otherNames}`:`${payer.name} lent you`;
+      const oweClass=isYou?'orange':'green';
+      const payerStr=isYou?'you paid':`${payer.name} paid`;
+      const oweHtml=`<div class="exp-owe ${oweClass}">${fm(owe)}</div><div class="exp-owe-label">${oweLabel}</div>`;
+      h+=`<div class="expense-row">
+        <div class="exp-date"><div class="exp-date-month">${mo}</div><div class="exp-date-day">${+day}</div></div>
+        <div class="exp-icon">${cat.icon}</div>
+        <div class="exp-info">
+          <div class="exp-name-row"><div class="exp-name">${b.name}</div>${b.recur_id?'<span class="recur-tag" title="Recurring">🔄</span>':''}</div>
+          <div class="exp-sub">${payerStr}</div>
+        </div>
+        <div class="exp-amounts">
+          <div class="exp-total">${fm(Number(b.amount))}</div>
+          ${oweHtml}
+        </div>
+        <div class="exp-actions">
+          <button class="icon-btn" title="Edit" onclick="editBill('${b.id}')">✏️</button>
+          <button class="icon-btn del" title="Delete" onclick="askDeleteBill('${b.id}','${b.name.replace(/'/g,"\\'")}')">🗑</button>
+        </div>
+      </div>`;
+    });
   });
   el.innerHTML=h;
 }
@@ -840,7 +852,7 @@ function renderReports(){
 function renderTopbar(){
   const titles={ledger:'Winona',recurring:'Recurring Bills',history:'History',people:'People',export:'Export',reports:'Reports'};
   const subs={
-    ledger:monthLabel(monthKey()),
+    ledger:bills.length?`${bills.length} outstanding expense${bills.length===1?'':'s'}`:'All settled up',
     recurring:`${recurs.length} bills configured`,
     history:`${history.length} months archived`,
     people:`${people.length} people`,
@@ -890,7 +902,9 @@ window.askDeletePerson=function(id,name){
 // ── SETTLE ────────────────────────────────────────────────────────
 function openSettleModal(){
   const{balance,paid,total}=calcBal();
-  document.getElementById('settle-month-name').textContent=monthLabel(monthKey());
+  const months=[...new Set(bills.map(b=>b.month||b.date.slice(0,7)))].sort();
+  const rangeLabel=months.length===0?monthLabel(monthKey()):months.length===1?monthLabel(months[0]):`${monthLabel(months[0])} – ${monthLabel(months[months.length-1])}`;
+  document.getElementById('settle-month-name').textContent=rangeLabel;
   const bal=Number(balance);
   const balLine=bal>0.01?`Others owe you ${fm(bal)}`:bal<-0.01?`You owe others ${fm(Math.abs(bal))}`:'All square — no payment needed';
   let paidRows='';
@@ -903,20 +917,22 @@ function closeSettleModal(){document.getElementById('settle-overlay').classList.
 window.confirmSettle=async function(){
   const{balance,paid,total}=calcBal();
   const mk=monthKey();
+  const months=[...new Set(bills.map(b=>b.month||b.date.slice(0,7)))].sort();
+  const rangeLabel=months.length===0?monthLabel(mk):months.length===1?monthLabel(months[0]):`${monthLabel(months[0])} – ${monthLabel(months[months.length-1])}`;
   await sb.from('history').insert({
     household_id:HOUSEHOLD_ID,
     month_key:mk,
-    month_label:monthLabel(mk),
+    month_label:rangeLabel,
     balance,
     total,
     paid_summary:paid,
     bills_snapshot:bills,
     settled_on:new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}),
   });
-  await sb.from('bills').delete().eq('household_id',HOUSEHOLD_ID).eq('month',mk);
+  await sb.from('bills').delete().eq('household_id',HOUSEHOLD_ID);
   await Promise.all([loadBills(),loadHistory()]);
   closeSettleModal(); render();
-  showToast('Month settled and archived!');
+  showToast('Settled and archived!');
 };
 
 // ── ADD / EDIT BILL ───────────────────────────────────────────────
@@ -985,7 +1001,7 @@ window.saveBill=async function(){
   const cat=CATMAP[selCat]||CATMAP.other;
   const name=rawDesc||cat.name;
   const dateVal=document.getElementById('f-date').value||todayStr();
-  const billMonth=dateVal.slice(0,7);
+  const billMonth=dateVal.slice(0,7); // month derived from the actual expense date
 
   document.getElementById('save-btn').textContent='Saving...';
   document.getElementById('save-btn').disabled=true;
