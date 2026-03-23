@@ -204,6 +204,14 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 .report-month-block[open] summary .rm-chevron{transform:rotate(180deg)}
 .report-month-block summary .rm-total{color:var(--ink);font-size:.88rem;text-transform:none;letter-spacing:0;font-weight:800;margin-left:auto}
 .report-month-cats{padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.report-section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.report-section-header .report-section-title{margin-bottom:0}
+.year-nav{display:flex;align-items:center;gap:6px}
+.year-nav-label{font-size:.9rem;font-weight:800;color:var(--ink);min-width:42px;text-align:center}
+.year-nav-btn{background:var(--light);border:1px solid var(--border);border-radius:6px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;color:var(--ink);line-height:1;font-family:var(--font);transition:background .15s}
+.year-nav-btn:hover:not(:disabled){background:var(--border)}
+.year-nav-btn:disabled{opacity:.35;cursor:default}
+.line-chart-wrap{overflow:hidden;border-radius:6px}
 
 /* Avatar colors */
 .avatar-0{background:#e67e5a}
@@ -517,6 +525,7 @@ const AVATAR_COLORS=['#e67e5a','#3d85c8','#5bc5a7','#9b59b6','#e67e22'];
 // ── STATE ─────────────────────────────────────────────────────────
 let people=[], bills=[], recurs=[], history=[];
 let activeView='ledger';
+let reportYear=new Date().getFullYear();
 let selPayerId=null;
 let selSplitPct=50; // % the non-payer owes: 50=50/50, 0=personal, other=custom
 let filterPersonId=null; // sidebar ledger filter
@@ -848,19 +857,23 @@ function renderReports(){
     if(!billsByMonth[mk])billsByMonth[mk]=[];
     billsByMonth[mk].push(b);
   });
-  const months=Object.keys(billsByMonth).sort().reverse(); // most recent first
+  const months=Object.keys(billsByMonth).sort().reverse();
 
-  // ── Section 1: Month Over Month totals ──────────────────────────
+  // Monthly totals
   const monthTotals={};
   months.forEach(mk=>{monthTotals[mk]=billsByMonth[mk].reduce((s,b)=>s+Number(b.amount||0),0);});
-  const maxMonth=Math.max(...Object.values(monthTotals),0.01);
-  const monthRows=months.map(mk=>`<div class="report-bar-row">
-    <div class="report-bar-label">${monthLabel(mk)}</div>
-    <div class="report-bar-track"><div class="report-bar-fill blue" style="width:${Math.round(monthTotals[mk]/maxMonth*100)}%"></div></div>
-    <div class="report-bar-value">${fm(monthTotals[mk])}</div>
-  </div>`).join('');
 
-  // ── Section 2: Category breakdown per month ──────────────────────
+  // ── Section 1: Line chart ─────────────────────────────────────
+  const allYears=[...new Set(months.map(mk=>parseInt(mk.slice(0,4))))].sort();
+  const curYear=new Date().getFullYear();
+  if(!allYears.includes(reportYear)) reportYear=allYears[allYears.length-1]||curYear;
+  const canPrev=allYears.some(y=>y<reportYear);
+  const canNext=allYears.some(y=>y>reportYear);
+  const yearMonths=Array.from({length:12},(_,i)=>`${reportYear}-${String(i+1).padStart(2,'0')}`);
+  const yearValues=yearMonths.map(mk=>monthTotals[mk]||0);
+  const hasYearData=yearValues.some(v=>v>0);
+
+  // ── Section 2: Category breakdown per month ───────────────────
   const monthBlocks=months.map((mk,i)=>{
     const mbills=billsByMonth[mk];
     const byCat={};
@@ -882,13 +895,70 @@ function renderReports(){
 
   el.innerHTML=`
     <div class="report-section">
-      <div class="report-section-title">Monthly Totals</div>
-      ${monthRows}
+      <div class="report-section-header">
+        <div class="report-section-title">Monthly Totals</div>
+        <div class="year-nav">
+          <button class="year-nav-btn" onclick="changeReportYear(-1)" ${canPrev?'':'disabled'}>‹</button>
+          <span class="year-nav-label">${reportYear}</span>
+          <button class="year-nav-btn" onclick="changeReportYear(1)" ${canNext?'':'disabled'}>›</button>
+        </div>
+      </div>
+      ${hasYearData?buildLineChart(yearValues):`<div class="report-empty">No data for ${reportYear}</div>`}
     </div>
     <div class="report-section">
       <div class="report-section-title">Spending by Category</div>
       ${monthBlocks}
     </div>`;
+}
+
+window.changeReportYear=function(delta){reportYear+=delta;renderReports();};
+
+function buildLineChart(values){
+  const W=560,H=200,PL=64,PR=16,PT=24,PB=38;
+  const plotW=W-PL-PR, plotH=H-PT-PB;
+  const maxVal=Math.max(...values,1);
+  const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const xs=values.map((_,i)=>PL+(i/11)*plotW);
+  const ys=values.map(v=>PT+plotH-(v/maxVal)*plotH);
+
+  // Grid + Y-axis labels (4 ticks)
+  const ticks=4;
+  const grid=Array.from({length:ticks+1},(_,i)=>{
+    const pct=i/ticks;
+    const ty=(PT+plotH-pct*plotH).toFixed(1);
+    const lv=Math.round(pct*maxVal);
+    return`<line x1="${PL}" y1="${ty}" x2="${W-PR}" y2="${ty}" stroke="#e2e4e9" stroke-width="1"/>
+    <text x="${PL-6}" y="${(+ty+4).toFixed(1)}" text-anchor="end" font-size="10" fill="#7a8294">${lv===0?'$0':'$'+lv.toLocaleString()}</text>`;
+  }).join('');
+
+  // X-axis labels
+  const xLabels=MN.map((n,i)=>
+    `<text x="${xs[i].toFixed(1)}" y="${H-PB+16}" text-anchor="middle" font-size="10" fill="${values[i]>0?'#1a1c21':'#b0b5c0'}">${n}</text>`
+  ).join('');
+
+  // Area fill path
+  const area=`M${xs[0].toFixed(1)},${ys[0].toFixed(1)} `+
+    xs.slice(1).map((x,i)=>`L${x.toFixed(1)},${ys[i+1].toFixed(1)}`).join(' ')+
+    ` L${xs[11].toFixed(1)},${(PT+plotH).toFixed(1)} L${xs[0].toFixed(1)},${(PT+plotH).toFixed(1)} Z`;
+
+  // Line path
+  const line=`M${xs[0].toFixed(1)},${ys[0].toFixed(1)} `+
+    xs.slice(1).map((x,i)=>`L${x.toFixed(1)},${ys[i+1].toFixed(1)}`).join(' ');
+
+  // Data points
+  const pts=xs.map((x,i)=>{
+    if(values[i]===0) return`<circle cx="${x.toFixed(1)}" cy="${ys[i].toFixed(1)}" r="3" fill="#e2e4e9"/>`;
+    const ly=ys[i]>PT+16?ys[i]-10:ys[i]+18;
+    return`<circle cx="${x.toFixed(1)}" cy="${ys[i].toFixed(1)}" r="5" fill="#3d85c8" stroke="white" stroke-width="2"/>
+    <text x="${x.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" font-size="9" font-weight="700" fill="#3d85c8">$${Math.round(values[i]).toLocaleString()}</text>`;
+  }).join('');
+
+  return`<div class="line-chart-wrap"><svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">
+    ${grid}${xLabels}
+    <path d="${area}" fill="rgba(61,133,200,0.08)"/>
+    <path d="${line}" fill="none" stroke="#3d85c8" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    ${pts}
+  </svg></div>`;
 }
 
 // ── TOPBAR ────────────────────────────────────────────────────────
