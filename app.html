@@ -1062,9 +1062,9 @@ window.saveBill=async function(){
     }
   }else{
     if(recurOn){
-      const{data:nr}=await sb.from('recurring_bills').insert({household_id:HOUSEHOLD_ID,name,category:selCat,amount,payer_person_id:selPayerId,split_pct:selSplitPct,frequency:document.getElementById('f-freq').value,day_of_month:parseInt(dateVal.split('-')[2])||parseInt(document.getElementById('f-day').value)||1}).select().single();
-      await sb.from('bills').insert({household_id:HOUSEHOLD_ID,recur_id:nr.id,name,category:selCat,amount,payer_person_id:selPayerId,split_pct:selSplitPct,date:dateVal,month:billMonth});
-      await Promise.all([loadRecurs(),loadBills()]);
+      // Only create the recurring template — checkRecurringDue() will prompt to add it when the due day arrives
+      await sb.from('recurring_bills').insert({household_id:HOUSEHOLD_ID,name,category:selCat,amount,payer_person_id:selPayerId,split_pct:selSplitPct,frequency:document.getElementById('f-freq').value,day_of_month:parseInt(dateVal.split('-')[2])||parseInt(document.getElementById('f-day').value)||1});
+      await loadRecurs();
     }else{
       await sb.from('bills').insert({household_id:HOUSEHOLD_ID,name,category:selCat,amount,payer_person_id:selPayerId,split_pct:selSplitPct,date:dateVal,month:billMonth});
       await loadBills();
@@ -1219,7 +1219,10 @@ function checkRecurringDue(){
     // Find most recent month this recurring was ever added (bills + history snapshots)
     const allAdded=[...bills.filter(b=>b.recur_id===r.id)];
     history.forEach(h=>{if(Array.isArray(h.bills_snapshot))allAdded.push(...h.bills_snapshot.filter(b=>b.recur_id===r.id));});
-    if(!allAdded.length)return true; // never added — always due
+    if(!allAdded.length){
+      // Brand new — only due if today has reached or passed the day_of_month
+      return new Date().getDate()>=(r.day_of_month||1);
+    }
     const lastMk=allAdded.map(b=>b.month).filter(Boolean).sort().reverse()[0];
     if(!lastMk)return true;
     return monthDiff(lastMk,mk)>=(FREQ_INTERVAL[r.frequency]||1);
