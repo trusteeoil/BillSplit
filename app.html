@@ -381,7 +381,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
       <label class="form-label">Description (optional)</label>
       <input type="text" class="form-input" id="f-desc" placeholder="e.g. Publix run">
     </div></div>
-    <div class="form-row full"><div>
+    <div class="form-row full" id="date-row"><div>
       <label class="form-label">Date</label>
       <input type="date" class="form-input" id="f-date">
     </div></div>
@@ -578,6 +578,7 @@ function todayStr(){const d=new Date();return`${d.getFullYear()}-${String(d.getM
 function monthKey(){const d=new Date();return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`}
 function monthLabel(key){const[y,m]=key.split('-');return new Date(+y,+m-1,1).toLocaleDateString('en-US',{month:'long',year:'numeric'})}
 function fm(n){return'$'+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function ordinal(n){const s=['th','st','nd','rd'];const v=n%100;return n+(s[(v-20)%10]||s[v]||s[0]);}
 function personById(id){return people.find(p=>p.id===id)||{name:'Unknown',color_idx:0}}
 function personInitial(name){return(name||'?')[0].toUpperCase()}
 function avatarColor(idx){return AVATAR_COLORS[(idx||0)%AVATAR_COLORS.length]}
@@ -727,7 +728,7 @@ function renderRecurring(){
       <div style="font-size:1.3rem;width:36px;text-align:center;flex-shrink:0">${cat.icon}</div>
       <div class="recur-info">
         <div class="recur-name">${r.name}</div>
-        <div class="recur-detail">${FREQLABEL[r.frequency]||r.frequency} · day ${r.day_of_month} · ${payer.name} pays</div>
+        <div class="recur-detail">${FREQLABEL[r.frequency]||r.frequency} · due the ${ordinal(r.day_of_month)} · ${payer.name} pays</div>
       </div>
       <div class="recur-amt">${r.amount>0?fm(r.amount):'—'}</div>
       <button class="icon-btn" onclick="editRecur('${r.id}')" title="Edit">✏️</button>
@@ -1001,7 +1002,7 @@ function openAddModal(forRecur){
   document.getElementById('add-overlay').classList.add('open');
   setTimeout(()=>document.getElementById('f-amount').focus(),300);
 }
-function closeAddModal(){document.getElementById('add-overlay').classList.remove('open');editingId=null;}
+function closeAddModal(){document.getElementById('add-overlay').classList.remove('open');document.getElementById('date-row').style.display='';editingId=null;}
 
 window.editBill=function(id){
   const b=bills.find(b=>b.id===id); if(!b)return;
@@ -1025,13 +1026,13 @@ window.editRecur=function(id){
   editingId='recur:'+id;
   document.getElementById('f-amount').value=r.amount;
   document.getElementById('f-desc').value=r.name;
-  document.getElementById('f-date').value=todayStr();
   selPayerId=r.payer_person_id; selCat=r.category; selSplitPct=r.split_pct??50;
   recurOn=true;
   document.getElementById('recur-sw').classList.add('on');
   document.getElementById('recur-extra').classList.add('vis');
   document.getElementById('f-freq').value=r.frequency;
   document.getElementById('f-day').value=r.day_of_month;
+  document.getElementById('date-row').style.display='none';
   document.getElementById('add-title').textContent='Edit recurring bill';
   document.getElementById('save-btn').textContent='Save changes';
   buildPayerToggle(); buildSplitToggle(); buildCatGrid();
