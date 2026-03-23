@@ -914,7 +914,7 @@ function renderReports(){
 window.changeReportYear=function(delta){reportYear+=delta;renderReports();};
 
 function buildLineChart(values){
-  const W=560,H=200,PL=64,PR=16,PT=24,PB=38;
+  const W=560,H=200,PL=64,PR=16,PT=32,PB=38;
   const plotW=W-PL-PR, plotH=H-PT-PB;
   const maxVal=Math.max(...values,1);
   const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -945,12 +945,17 @@ function buildLineChart(values){
   const line=`M${xs[0].toFixed(1)},${ys[0].toFixed(1)} `+
     xs.slice(1).map((x,i)=>`L${x.toFixed(1)},${ys[i+1].toFixed(1)}`).join(' ');
 
-  // Data points
+  // Data points with pill bubbles
   const pts=xs.map((x,i)=>{
     if(values[i]===0) return`<circle cx="${x.toFixed(1)}" cy="${ys[i].toFixed(1)}" r="3" fill="#e2e4e9"/>`;
-    const ly=ys[i]>PT+16?ys[i]-10:ys[i]+18;
+    const label='$'+Math.round(values[i]).toLocaleString();
+    const bw=Math.max(label.length*6.5+10,32), bh=16;
+    const above=ys[i]>PT+20;
+    const ry=above?ys[i]-36:ys[i]+12;
+    const ty=ry+bh-4;
     return`<circle cx="${x.toFixed(1)}" cy="${ys[i].toFixed(1)}" r="5" fill="#3d85c8" stroke="white" stroke-width="2"/>
-    <text x="${x.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" font-size="9" font-weight="700" fill="#3d85c8">$${Math.round(values[i]).toLocaleString()}</text>`;
+    <rect x="${(x-bw/2).toFixed(1)}" y="${ry.toFixed(1)}" width="${bw.toFixed(1)}" height="${bh}" rx="8" fill="white" stroke="#3d85c8" stroke-width="1.5"/>
+    <text x="${x.toFixed(1)}" y="${ty.toFixed(1)}" text-anchor="middle" font-size="9" font-weight="700" fill="#3d85c8">${label}</text>`;
   }).join('');
 
   return`<div class="line-chart-wrap"><svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">
