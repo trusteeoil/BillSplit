@@ -455,6 +455,22 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
   </div>
 </div>
 
+<!-- RECURRING DUE MODAL -->
+<div class="modal-overlay" id="recur-due-overlay">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-title">
+      <span>🔄 Recurring Bills Due</span>
+      <button class="modal-close" onclick="dismissRecurDue()">✕</button>
+    </div>
+    <p id="recur-due-sub" style="font-size:.82rem;color:var(--muted);margin:-4px 0 14px"></p>
+    <div id="recur-due-list"></div>
+    <div class="modal-footer" style="margin-top:16px">
+      <button class="btn btn-ghost" onclick="dismissRecurDue()">Dismiss</button>
+      <button class="btn btn-primary" id="recur-due-add-btn" onclick="addAllDueRecurring()">✓ Add All</button>
+    </div>
+  </div>
+</div>
+
 <!-- CONFIRM DIALOG -->
 <div class="confirm-overlay" id="confirm-overlay">
   <div class="confirm-box">
@@ -529,6 +545,7 @@ async function init(){
   selPayerId=myPersonId;
 
   render();
+  checkRecurringDue();
 }
 
 // ── DATA LOADERS ──────────────────────────────────────────────────
@@ -1181,6 +1198,87 @@ function switchView(v){
     }
   });
 });
+
+// ── RECURRING DUE CHECK ───────────────────────────────────────────
+const FREQ_INTERVAL={monthly:1,bimonthly:2,quarterly:3,biannual:6,annual:12};
+
+function monthDiff(mkOld,mkNew){
+  const[y1,m1]=mkOld.split('-').map(Number);
+  const[y2,m2]=mkNew.split('-').map(Number);
+  return(y2-y1)*12+(m2-m1);
+}
+
+function checkRecurringDue(){
+  if(!recurs.length)return;
+  const mk=monthKey();
+  if(localStorage.getItem(`recur-dismissed-${mk}`))return;
+
+  const due=recurs.filter(r=>{
+    // Already added this month?
+    if(bills.some(b=>b.recur_id===r.id&&b.month===mk))return false;
+    // Find most recent month this recurring was ever added (bills + history snapshots)
+    const allAdded=[...bills.filter(b=>b.recur_id===r.id)];
+    history.forEach(h=>{if(Array.isArray(h.bills_snapshot))allAdded.push(...h.bills_snapshot.filter(b=>b.recur_id===r.id));});
+    if(!allAdded.length)return true; // never added — always due
+    const lastMk=allAdded.map(b=>b.month).filter(Boolean).sort().reverse()[0];
+    if(!lastMk)return true;
+    return monthDiff(lastMk,mk)>=(FREQ_INTERVAL[r.frequency]||1);
+  });
+
+  if(!due.length)return;
+  openRecurDueModal(due);
+}
+
+let _dueRecurs=[];
+
+function openRecurDueModal(due){
+  _dueRecurs=due;
+  const mk=monthKey();
+  document.getElementById('recur-due-sub').textContent=
+    `${due.length} bill${due.length>1?'s':''} not yet added for ${monthLabel(mk)}`;
+  document.getElementById('recur-due-list').innerHTML=due.map(r=>{
+    const payer=personById(r.payer_person_id);
+    const cat=CATMAP[r.category]||CATMAP.other;
+    const splitLabel=r.split_pct===100?'Full':r.split_pct===50?'50/50':`${r.split_pct}%`;
+    return`<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="font-size:1.4rem;width:32px;text-align:center">${cat.icon}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:.92rem">${r.name}</div>
+        <div style="font-size:.75rem;color:var(--muted)">${payer.name} pays · ${splitLabel} · ${FREQLABEL[r.frequency]||r.frequency}</div>
+      </div>
+      <div style="font-weight:800;font-size:.95rem;flex-shrink:0">${fm(r.amount)}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('recur-due-overlay').classList.add('open');
+}
+
+function dismissRecurDue(){
+  document.getElementById('recur-due-overlay').classList.remove('open');
+  localStorage.setItem(`recur-dismissed-${monthKey()}`,'1');
+  _dueRecurs=[];
+}
+
+window.addAllDueRecurring=async function(){
+  if(!_dueRecurs.length)return;
+  const btn=document.getElementById('recur-due-add-btn');
+  btn.textContent='Adding…';btn.disabled=true;
+  const mk=monthKey();
+  const[y,m]=mk.split('-').map(Number);
+  const inserts=_dueRecurs.map(r=>{
+    const day=Math.min(r.day_of_month||1,new Date(y,m,0).getDate());
+    const dateStr=`${mk}-${String(day).padStart(2,'0')}`;
+    return{household_id:HOUSEHOLD_ID,recur_id:r.id,name:r.name,category:r.category,
+      amount:r.amount,payer_person_id:r.payer_person_id,split_pct:r.split_pct,date:dateStr,month:mk};
+  });
+  await sb.from('bills').insert(inserts);
+  await loadBills();
+  document.getElementById('recur-due-overlay').classList.remove('open');
+  localStorage.setItem(`recur-dismissed-${mk}`,'1');
+  _dueRecurs=[];
+  render();
+  btn.textContent='✓ Add All';btn.disabled=false;
+  showToast(`${inserts.length} recurring bill${inserts.length>1?'s':''} added!`);
+};
 
 buildCatGrid();
 init();
