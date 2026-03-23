@@ -404,11 +404,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
             <option value="annual">Annual</option>
           </select>
         </div>
-        <div>
-          <label class="form-label">Day of Month</label>
-          <input type="number" class="form-input" id="f-day" min="1" max="28" value="1">
-        </div>
       </div>
+      <input type="hidden" id="f-day" value="1">
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeAddModal()">Cancel</button>
@@ -1032,7 +1029,9 @@ window.editRecur=function(id){
   document.getElementById('recur-extra').classList.add('vis');
   document.getElementById('f-freq').value=r.frequency;
   document.getElementById('f-day').value=r.day_of_month;
-  document.getElementById('date-row').style.display='none';
+  // Prefill date to current month + stored due day so user sees and edits the correct day
+  const _mk=monthKey();const _d=String(r.day_of_month||1).padStart(2,'0');
+  document.getElementById('f-date').value=`${_mk}-${_d}`;
   document.getElementById('add-title').textContent='Edit recurring bill';
   document.getElementById('save-btn').textContent='Save changes';
   buildPayerToggle(); buildSplitToggle(); buildCatGrid();
@@ -1055,7 +1054,7 @@ window.saveBill=async function(){
   if(editingId){
     if(editingId.startsWith('recur:')){
       const rid=editingId.slice(6);
-      await sb.from('recurring_bills').update({name,category:selCat,amount,payer_person_id:selPayerId,split_pct:selSplitPct,frequency:document.getElementById('f-freq').value,day_of_month:parseInt(document.getElementById('f-day').value)||1}).eq('id',rid);
+      await sb.from('recurring_bills').update({name,category:selCat,amount,payer_person_id:selPayerId,split_pct:selSplitPct,frequency:document.getElementById('f-freq').value,day_of_month:parseInt(dateVal.split('-')[2])||parseInt(document.getElementById('f-day').value)||1}).eq('id',rid);
       await loadRecurs();
     }else{
       await sb.from('bills').update({name,category:selCat,amount,payer_person_id:selPayerId,split_pct:selSplitPct,date:dateVal,month:billMonth}).eq('id',editingId);
@@ -1063,7 +1062,7 @@ window.saveBill=async function(){
     }
   }else{
     if(recurOn){
-      const{data:nr}=await sb.from('recurring_bills').insert({household_id:HOUSEHOLD_ID,name,category:selCat,amount,payer_person_id:selPayerId,split_pct:selSplitPct,frequency:document.getElementById('f-freq').value,day_of_month:parseInt(document.getElementById('f-day').value)||1}).select().single();
+      const{data:nr}=await sb.from('recurring_bills').insert({household_id:HOUSEHOLD_ID,name,category:selCat,amount,payer_person_id:selPayerId,split_pct:selSplitPct,frequency:document.getElementById('f-freq').value,day_of_month:parseInt(dateVal.split('-')[2])||parseInt(document.getElementById('f-day').value)||1}).select().single();
       await sb.from('bills').insert({household_id:HOUSEHOLD_ID,recur_id:nr.id,name,category:selCat,amount,payer_person_id:selPayerId,split_pct:selSplitPct,date:dateVal,month:billMonth});
       await Promise.all([loadRecurs(),loadBills()]);
     }else{
