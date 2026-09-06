@@ -76,6 +76,16 @@ Forgetting a connection only clears this browser. It does not delete anything fr
 
 Selecting a person returns to the app using that person's perspective. Adding or editing a person stays within Settings so more changes can be made. Person records are shared through Turso, but each browser remembers its own selected person.
 
+Settings is divided into three tabs:
+
+- **People** — switch, add, or edit household members
+- **Connection** — change, test, or forget the Turso connection on this device
+- **Share** — copy a private setup link for another household device
+
+The share link Base64-encodes the Turso URL and database token inside a URL `#` fragment. The fragment is handled by the browser and is not sent to GitHub Pages. When opened, BillSplit removes the fragment from the address bar, tests and saves the connection, and opens the person picker.
+
+Base64 is not encryption. Anyone who receives the complete share link can decode the token and access the database, so the link should only be sent privately to a trusted household member.
+
 ## Deployment
 
 Publish `index.html`, `app.html`, and `turso.js` together at the repository root. GitHub Pages can continue serving the project directly from the `main` branch.

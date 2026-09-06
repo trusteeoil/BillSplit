@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>BillSplit – Winona</title>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -296,7 +299,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
     <div class="bal-sub" id="sb-sub"></div>
     <button class="btn btn-secondary" onclick="openSettleModal();closeSidebar();" style="width:100%;margin-bottom:8px;padding:10px">Settle up</button>
     <button class="signout-btn" onclick="openSettings()">⚙ Settings</button>
-    <button class="signout-btn" onclick="location.reload()" style="margin-top:6px">↻ Check for updates</button>
+    <button class="signout-btn" onclick="checkForUpdates()" style="margin-top:6px">↻ Check for updates</button>
   </div>
 </aside>
 
@@ -491,7 +494,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script src="turso.js"></script>
+<script src="turso.js?v=20260906-3"></script>
 <script>
 const HOUSEHOLD_ID='default';
 const sb=BillSplitDB;
@@ -610,7 +613,8 @@ function showToast(msg){
 }
 
 // ── DEVICE SETTINGS ───────────────────────────────────────────────
-function openSettings(){window.location.href='index.html?settings=1';}
+function openSettings(){window.location.href='index.html?settings=1&v=20260906-3';}
+function checkForUpdates(){window.location.href=`app.html?v=${Date.now()}`;}
 
 // ── CONFIRM DIALOG ────────────────────────────────────────────────
 let confirmCallback=null;
