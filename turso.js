@@ -48,7 +48,8 @@
     if (typeof value === "boolean") return { type: "integer", value: value ? "1" : "0" };
     if (typeof value === "number") {
       if (!Number.isFinite(value)) throw new Error("A database value is not a finite number.");
-      return { type: Number.isInteger(value) ? "integer" : "float", value: String(value) };
+      if (Number.isInteger(value)) return { type: "integer", value: String(value) };
+      return { type: "float", value };
     }
     if (typeof value === "object") value = JSON.stringify(value);
     return { type: "text", value: String(value) };
