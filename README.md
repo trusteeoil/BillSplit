@@ -4,6 +4,17 @@ Household expense tracker for two — split bills, track spending, and settle up
 
 **Live app:** https://trusteeoil.github.io/BillSplit/
 
+## What it does
+
+- Tracks shared expenses and who paid each one
+- Supports 50/50, full, and custom percentage splits
+- Calculates the balance from the selected person's perspective
+- Stores reusable recurring-bill templates
+- Archives expenses and balance details when a period is settled
+- Shows spending reports by month and category
+- Exports expenses by year as CSV
+- Works on desktop and mobile with no installation or application server
+
 ## Stack
 
 - Plain HTML, CSS, and JavaScript
@@ -22,6 +33,20 @@ Household expense tracker for two — split bills, track spending, and settle up
 
 The connection and selected person are stored in that browser's `localStorage`. They are not included in this repository. Anyone with access to that browser profile can retrieve the database token, so this direct-browser design is intended for a small trusted household.
 
+There are no BillSplit usernames or passwords. The Turso URL and token connect the household to its database, while the locally selected person determines what “you paid,” “you owe,” and “others owe you” mean on that device.
+
+## Everyday use
+
+After setup, opening the site goes directly to the ledger. Expenses, recurring templates, people, and settlement history are read from and written to the shared Turso database. Changes made on one device are available to the other device the next time it loads or refreshes the relevant data.
+
+The percentage stored on each expense is the amount the non-payer owes the payer:
+
+- `50` means an even 50/50 split
+- `100` means the other person owes the full expense
+- A custom value such as `30` means the other person owes 30%
+
+Settling up copies the current expenses into a history snapshot and clears the active ledger. Recurring templates are not inserted automatically; BillSplit prompts when templates appear due and lets the user add them.
+
 ## Files
 
 - `index.html` — Turso connection setup and person selection
@@ -39,18 +64,23 @@ IDs are generated in the browser with `crypto.randomUUID()`. History snapshots a
 
 ## Settings
 
-Choose **Database & person settings** from the sidebar to:
+Choose **Settings** from the sidebar to:
 
-- Change or test the database URL and token
-- Select a different person
-- Create another person
+- See which person is active on the current device
+- Switch to a different person
+- Add or edit people
+- Change and test the database URL and token
 - Forget the saved connection on the current device
 
 Forgetting a connection only clears this browser. It does not delete anything from Turso.
 
+Selecting a person returns to the app using that person's perspective. Adding or editing a person stays within Settings so more changes can be made. Person records are shared through Turso, but each browser remembers its own selected person.
+
 ## Deployment
 
 Publish `index.html`, `app.html`, and `turso.js` together at the repository root. GitHub Pages can continue serving the project directly from the `main` branch.
+
+No Turso credentials belong in these files. Each device enters them through the setup screen after deployment.
 
 ## Existing Supabase data
 
