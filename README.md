@@ -7,7 +7,7 @@ Household expense tracker for two — split bills, track spending, and settle up
 ## What it does
 
 - Tracks shared expenses and who paid each one
-- Supports 50/50, full, and custom percentage splits
+- Supports 50/50, full, custom percentage, and income-based splits
 - Calculates the balance from the selected person's perspective
 - Stores reusable recurring-bill templates
 - Archives expenses and balance details when a period is settled
@@ -46,7 +46,17 @@ The percentage stored on each expense is the amount the non-payer owes the payer
 - `100` means the other person owes the full expense
 - A custom value such as `30` means the other person owes 30%
 
+Each person can save a gross yearly income under **Settings → People**. Choosing **Income** while adding an expense divides responsibility in proportion to both incomes. For example, with incomes of $75,000 and $25,000, the two shares are 75% and 25%. The percentage saved on an ordinary expense is the calculated share at that time.
+
+Income-based recurring templates recalculate the percentage from the current saved incomes when the due expense is added. This means updating an income affects future recurring expenses without changing expenses already in the ledger or history.
+
 Settling up copies the current expenses into a history snapshot and clears the active ledger. Recurring templates are not inserted automatically; BillSplit prompts when templates appear due and lets the user add them.
+
+### How recurring bills work
+
+BillSplit checks recurring templates after the app loads its people, active expenses, and history. A template is considered due when it has not already been added for the current month and enough months have passed for its frequency. A brand-new template also waits until its configured day of the month.
+
+The check opens a **Recurring Bills Due** prompt; it does not add expenses automatically. Choose **Add All** to create the listed expenses. Dismissing the prompt hides it on that browser for the rest of the current month. The app checks again on a later page load when it has not been dismissed for that month.
 
 ## Importing from Splitwise
 

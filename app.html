@@ -150,6 +150,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 .split-label{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;margin-top:2px}
 .split-btn{flex:1;min-width:60px;padding:8px 6px;border-radius:10px;border:2px solid var(--border);background:var(--light);font-family:var(--font);font-size:.82rem;font-weight:700;cursor:pointer;transition:all .15s;color:var(--muted)}
 .split-btn.sel{border-color:var(--green);background:rgba(91,197,167,.12);color:var(--green-dark)}
+.income-split-note{display:none;background:rgba(91,197,167,.1);border-radius:10px;padding:10px 12px;margin-bottom:14px;color:var(--green-dark);font-size:.78rem;font-weight:700;line-height:1.4}
 
 .cat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:16px}
 .cat-btn{background:var(--light);border:2px solid transparent;border-radius:10px;padding:9px 4px 7px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all .15s}
@@ -413,6 +414,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
         <span style="font-weight:700;color:var(--muted);font-size:.9rem">% the other person owes</span>
       </div>
     </div>
+    <div class="income-split-note" id="split-income-wrap"></div>
     <div class="form-label" style="margin-bottom:6px">Category</div>
     <div class="cat-grid" id="cat-grid"></div>
     <div class="form-row full"><div>
@@ -483,6 +485,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
       <label class="form-label">Role / Note (optional)</label>
       <input type="text" class="form-input" id="p-role" placeholder="e.g. Wife, Roommate">
     </div></div>
+    <div class="form-row full"><div>
+      <label class="form-label">Yearly income</label>
+      <input type="number" inputmode="decimal" min="0" step="1000" class="form-input" id="p-income" placeholder="e.g. 65000">
+      <div style="font-size:.72rem;color:var(--muted);margin-top:5px">Used for income-based splits. Enter gross yearly income before taxes.</div>
+    </div></div>
     <div class="modal-footer" style="margin-top:16px">
       <button class="btn btn-ghost" onclick="closePersonModal()">Cancel</button>
       <button class="btn btn-primary" onclick="savePerson()">Save</button>
@@ -521,7 +528,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script src="turso.js?v=20260906-5"></script>
+<script src="turso.js?v=20260906-6"></script>
 <script>
 const HOUSEHOLD_ID='default';
 const sb=BillSplitDB;
@@ -553,6 +560,7 @@ let activeView='ledger';
 let reportYear=new Date().getFullYear();
 let selPayerId=null;
 let selSplitPct=50; // % the non-payer owes: 50=50/50, 0=personal, other=custom
+let selSplitMethod='fixed'; // fixed stores the chosen percent; income derives it from both incomes
 let filterPersonId=null; // sidebar ledger filter
 let selCat='groceries';
 let recurOn=false;
@@ -568,6 +576,7 @@ async function init(){
 
   try{
     await BillSplitDB.execute('SELECT 1 AS connected');
+    await BillSplitDB.initializeSchema();
     await Promise.all([loadPeople(), loadBills(), loadRecurs(), loadHistory()]);
   }catch(error){console.error(error);window.location.href='index.html?settings=1';return;}
 
@@ -614,6 +623,19 @@ function ordinal(n){const s=['th','st','nd','rd'];const v=n%100;return n+(s[(v-2
 function personById(id){return people.find(p=>p.id===id)||{name:'Unknown',color_idx:0}}
 function personInitial(name){return(name||'?')[0].toUpperCase()}
 function avatarColor(idx){return AVATAR_COLORS[(idx||0)%AVATAR_COLORS.length]}
+function personIncome(person){
+  if(!person||person.annual_income===null||person.annual_income===undefined||person.annual_income==='')return null;
+  const value=Number(person.annual_income);
+  return Number.isFinite(value)&&value>=0?value:null;
+}
+function incomeLabel(person){const income=personIncome(person);return income===null?'Income not set':`$${income.toLocaleString('en-US',{maximumFractionDigits:0})}/year`}
+function incomeSplitDetails(payerId=selPayerId){
+  if(people.length!==2)return null;
+  const payer=people.find(person=>person.id===payerId),other=people.find(person=>person.id!==payerId);
+  const payerIncome=personIncome(payer),otherIncome=personIncome(other);
+  if(!payer||!other||payerIncome===null||otherIncome===null||payerIncome+otherIncome<=0)return null;
+  return{payer,other,payerPct:payerIncome/(payerIncome+otherIncome)*100,otherPct:otherIncome/(payerIncome+otherIncome)*100};
+}
 
 function calcBal(){
   const paid={};
@@ -641,7 +663,7 @@ function showToast(msg){
 }
 
 // ── DEVICE SETTINGS ───────────────────────────────────────────────
-function openSettings(){window.location.href='index.html?settings=1&v=20260906-5';}
+function openSettings(){window.location.href='index.html?settings=1&v=20260906-6';}
 function checkForUpdates(){window.location.href=`app.html?v=${Date.now()}`;}
 
 // ── CONFIRM DIALOG ────────────────────────────────────────────────
@@ -754,11 +776,12 @@ function renderRecurring(){
   recurs.forEach(r=>{
     const cat=CATMAP[r.category]||CATMAP.other;
     const payer=personById(r.payer_person_id);
+    const splitText=r.split_method==='income'?' · income split':'';
     h+=`<div class="recur-card">
       <div style="font-size:1.3rem;width:36px;text-align:center;flex-shrink:0">${cat.icon}</div>
       <div class="recur-info">
         <div class="recur-name">${r.name}</div>
-        <div class="recur-detail">${FREQLABEL[r.frequency]||r.frequency} · due the ${ordinal(r.day_of_month)} · ${payer.name} pays</div>
+        <div class="recur-detail">${FREQLABEL[r.frequency]||r.frequency} · due the ${ordinal(r.day_of_month)} · ${payer.name} pays${splitText}</div>
       </div>
       <div class="recur-amt">${r.amount>0?fm(r.amount):'—'}</div>
       <button class="icon-btn" onclick="editRecur('${r.id}')" title="Edit">✏️</button>
@@ -804,7 +827,7 @@ function renderPeople(){
       <div class="person-avatar" style="background:${color}">${personInitial(p.name)}</div>
       <div class="person-info">
         <div class="person-name">${p.name}${p.id===myPersonId?' (You)':''}</div>
-        <div class="person-role">${p.role||'Household member'}</div>
+        <div class="person-role">${p.role||'Household member'} · ${incomeLabel(p)}</div>
       </div>
       <div class="person-actions">
         <button class="icon-btn" onclick="openPersonModal('${p.id}')" title="Edit">✏️</button>
@@ -846,7 +869,7 @@ async function exportCSV(){
     const payer=personById(b.payer_person_id);
     const amt=Number(b.amount||0);
     const pct=(b.split_pct??50)/100;
-    const splitLabel=pct===0?'Personal':pct===0.5?'50/50':`${Math.round(pct*100)}% other`;
+    const splitLabel=b.split_method==='income'?'Income':pct===0?'Personal':pct===0.5?'50/50':`${Math.round(pct*100)}% other`;
     const shares=people.map(p=>{
       if(p.id===b.payer_person_id) return(amt*(1-pct)).toFixed(2);
       return(amt*pct).toFixed(2);
@@ -1267,7 +1290,7 @@ function openAddModal(forRecur){
   document.getElementById('f-amount').value='';
   document.getElementById('f-desc').value='';
   document.getElementById('f-date').value=todayStr();
-  selPayerId=myPersonId; selCat='groceries'; selSplitPct=50;
+  selPayerId=myPersonId; selCat='groceries'; selSplitPct=50; selSplitMethod='fixed';
   recurOn=!!forRecur;
   document.getElementById('recur-sw').classList.toggle('on',recurOn);
   document.getElementById('recur-extra').classList.toggle('vis',recurOn);
@@ -1285,14 +1308,15 @@ window.editBill=function(id){
   document.getElementById('f-amount').value=b.amount;
   document.getElementById('f-desc').value=b.name;
   document.getElementById('f-date').value=b.date;
-  selPayerId=b.payer_person_id; selCat=b.category; selSplitPct=b.split_pct??50;
+  selPayerId=b.payer_person_id; selCat=b.category; selSplitPct=b.split_pct??50; selSplitMethod=b.split_method==='income'?'income':'fixed';
+  if(selSplitMethod==='income'){const details=incomeSplitDetails();if(details)selSplitPct=Number(details.otherPct.toFixed(4));}
   recurOn=false;
   document.getElementById('recur-sw').classList.remove('on');
   document.getElementById('recur-extra').classList.remove('vis');
   document.getElementById('add-title').textContent='Edit expense';
   document.getElementById('save-btn').textContent='Save changes';
   buildPayerToggle(); buildSplitToggle(); buildCatGrid();
-  if(selSplitPct!==50&&selSplitPct!==0){document.getElementById('f-split-pct').value=selSplitPct;}
+  if(selSplitMethod==='fixed'&&selSplitPct!==50&&selSplitPct!==100){document.getElementById('f-split-pct').value=selSplitPct;}
   document.getElementById('add-overlay').classList.add('open');
 };
 
@@ -1301,7 +1325,8 @@ window.editRecur=function(id){
   editingId='recur:'+id;
   document.getElementById('f-amount').value=r.amount;
   document.getElementById('f-desc').value=r.name;
-  selPayerId=r.payer_person_id; selCat=r.category; selSplitPct=r.split_pct??50;
+  selPayerId=r.payer_person_id; selCat=r.category; selSplitPct=r.split_pct??50; selSplitMethod=r.split_method==='income'?'income':'fixed';
+  if(selSplitMethod==='income'){const details=incomeSplitDetails();if(details)selSplitPct=Number(details.otherPct.toFixed(4));}
   recurOn=true;
   document.getElementById('recur-sw').classList.add('on');
   document.getElementById('recur-extra').classList.add('vis');
@@ -1313,13 +1338,18 @@ window.editRecur=function(id){
   document.getElementById('add-title').textContent='Edit recurring bill';
   document.getElementById('save-btn').textContent='Save changes';
   buildPayerToggle(); buildSplitToggle(); buildCatGrid();
-  if(selSplitPct!==50&&selSplitPct!==0){document.getElementById('f-split-pct').value=selSplitPct;}
+  if(selSplitMethod==='fixed'&&selSplitPct!==50&&selSplitPct!==100){document.getElementById('f-split-pct').value=selSplitPct;}
   document.getElementById('add-overlay').classList.add('open');
 };
 
 window.saveBill=async function(){
   const amount=parseFloat(document.getElementById('f-amount').value);
   if(!amount||amount<=0){showToast('Please enter a valid amount.');return;}
+  if(selSplitMethod==='income'){
+    const details=incomeSplitDetails();
+    if(!details){showToast('Add yearly income for both people before using an income split.');return;}
+    selSplitPct=Number(details.otherPct.toFixed(4));
+  }
   const rawDesc=document.getElementById('f-desc').value.trim();
   const cat=CATMAP[selCat]||CATMAP.other;
   const name=rawDesc||cat.name;
@@ -1332,19 +1362,19 @@ window.saveBill=async function(){
   if(editingId){
     if(editingId.startsWith('recur:')){
       const rid=editingId.slice(6);
-      await sb.from('recurring_bills').update({name,category:selCat,amount,payer_person_id:selPayerId,split_pct:selSplitPct,frequency:document.getElementById('f-freq').value,day_of_month:parseInt(dateVal.split('-')[2])||parseInt(document.getElementById('f-day').value)||1}).eq('id',rid);
+      await sb.from('recurring_bills').update({name,category:selCat,amount,payer_person_id:selPayerId,split_pct:selSplitPct,split_method:selSplitMethod,frequency:document.getElementById('f-freq').value,day_of_month:parseInt(dateVal.split('-')[2])||parseInt(document.getElementById('f-day').value)||1}).eq('id',rid);
       await loadRecurs();
     }else{
-      await sb.from('bills').update({name,category:selCat,amount,payer_person_id:selPayerId,split_pct:selSplitPct,date:dateVal,month:billMonth}).eq('id',editingId);
+      await sb.from('bills').update({name,category:selCat,amount,payer_person_id:selPayerId,split_pct:selSplitPct,split_method:selSplitMethod,date:dateVal,month:billMonth}).eq('id',editingId);
       await loadBills();
     }
   }else{
     if(recurOn){
       // Only create the recurring template — checkRecurringDue() will prompt to add it when the due day arrives
-      await sb.from('recurring_bills').insert({household_id:HOUSEHOLD_ID,name,category:selCat,amount,payer_person_id:selPayerId,split_pct:selSplitPct,frequency:document.getElementById('f-freq').value,day_of_month:parseInt(dateVal.split('-')[2])||parseInt(document.getElementById('f-day').value)||1});
+      await sb.from('recurring_bills').insert({household_id:HOUSEHOLD_ID,name,category:selCat,amount,payer_person_id:selPayerId,split_pct:selSplitPct,split_method:selSplitMethod,frequency:document.getElementById('f-freq').value,day_of_month:parseInt(dateVal.split('-')[2])||parseInt(document.getElementById('f-day').value)||1});
       await loadRecurs();
     }else{
-      await sb.from('bills').insert({household_id:HOUSEHOLD_ID,name,category:selCat,amount,payer_person_id:selPayerId,split_pct:selSplitPct,date:dateVal,month:billMonth});
+      await sb.from('bills').insert({household_id:HOUSEHOLD_ID,name,category:selCat,amount,payer_person_id:selPayerId,split_pct:selSplitPct,split_method:selSplitMethod,date:dateVal,month:billMonth});
       await loadBills();
     }
   }
@@ -1357,24 +1387,43 @@ window.saveBill=async function(){
 
 function setPayer(id){
   selPayerId=id;
+  if(selSplitMethod==='income'){
+    const details=incomeSplitDetails();
+    if(details)selSplitPct=Number(details.otherPct.toFixed(4));
+    buildSplitToggle();
+  }
   document.querySelectorAll('.payer-btn').forEach(b=>b.classList.toggle('sel',b.dataset.pid===id));
 }
 
 function buildSplitToggle(){
-  const isCustom=selSplitPct!==50&&selSplitPct!==100;
-  const opts=[{label:'50/50',pct:50},{label:'Full',pct:100},{label:'Custom %',pct:-1}];
+  const isIncome=selSplitMethod==='income',isCustom=!isIncome&&selSplitPct!==50&&selSplitPct!==100;
+  const opts=[{label:'50/50',pct:50},{label:'Full',pct:100},{label:'Custom %',pct:-1},{label:'Income',pct:-2}];
   document.getElementById('split-toggle').innerHTML=opts.map(o=>{
-    const sel=(o.pct===50&&selSplitPct===50)||(o.pct===100&&selSplitPct===100)||(o.pct===-1&&isCustom);
+    const sel=!isIncome&&((o.pct===50&&selSplitPct===50)||(o.pct===100&&selSplitPct===100)||(o.pct===-1&&isCustom))||(o.pct===-2&&isIncome);
     return`<button class="split-btn${sel?' sel':''}" onclick="setSplit(${o.pct})">${o.label}</button>`;
   }).join('');
   document.getElementById('split-custom-wrap').style.display=isCustom?'':'none';
+  const incomeWrap=document.getElementById('split-income-wrap');
+  incomeWrap.style.display=isIncome?'block':'none';
+  if(isIncome){
+    const details=incomeSplitDetails();
+    incomeWrap.textContent=details?`${details.payer.name} ${details.payerPct.toFixed(1)}% · ${details.other.name} ${details.otherPct.toFixed(1)}%`:'Add yearly income for both people in Settings → People.';
+  }
 }
 function setSplit(pct){
   if(pct===-1){
+    selSplitMethod='fixed';
     selSplitPct=30;
     document.getElementById('f-split-pct').value='30';
     document.getElementById('split-custom-wrap').style.display='';
+  }else if(pct===-2){
+    const details=incomeSplitDetails();
+    selSplitMethod='income';
+    if(details)selSplitPct=Number(details.otherPct.toFixed(4));
+    else showToast('Add yearly income for both people in Settings → People.');
+    document.getElementById('f-split-pct').value='';
   }else{
+    selSplitMethod='fixed';
     selSplitPct=pct;
     document.getElementById('f-split-pct').value='';
     document.getElementById('split-custom-wrap').style.display='none';
@@ -1383,7 +1432,7 @@ function setSplit(pct){
 }
 function setSplitCustom(){
   const v=parseFloat(document.getElementById('f-split-pct').value);
-  if(!isNaN(v)&&v>=0&&v<=100)selSplitPct=v;
+  if(!isNaN(v)&&v>=0&&v<=100){selSplitMethod='fixed';selSplitPct=v;}
   buildSplitToggle();
 }
 
@@ -1414,10 +1463,12 @@ function openPersonModal(id){
     const p=people.find(p=>p.id===id);
     document.getElementById('p-name').value=p?p.name:'';
     document.getElementById('p-role').value=p?p.role:'';
+    document.getElementById('p-income').value=p?.annual_income??'';
     document.getElementById('person-title').textContent='Edit person';
   }else{
     document.getElementById('p-name').value='';
     document.getElementById('p-role').value='';
+    document.getElementById('p-income').value='';
     document.getElementById('person-title').textContent='Add person';
   }
   document.getElementById('person-overlay').classList.add('open');
@@ -1429,11 +1480,14 @@ window.savePerson=async function(){
   const name=document.getElementById('p-name').value.trim();
   if(!name){showToast('Please enter a name.');return;}
   const role=document.getElementById('p-role').value.trim();
+  const incomeText=document.getElementById('p-income').value.trim();
+  const annual_income=incomeText===''?null:Number(incomeText);
+  if(annual_income!==null&&(!Number.isFinite(annual_income)||annual_income<0)){showToast('Please enter a valid yearly income.');return;}
   if(editingPersonId){
-    await sb.from('people').update({name,role}).eq('id',editingPersonId);
+    await sb.from('people').update({name,role,annual_income}).eq('id',editingPersonId);
   }else{
     const colorIdx=people.length%AVATAR_COLORS.length;
-    await sb.from('people').insert({household_id:HOUSEHOLD_ID,name,role,color_idx:colorIdx,is_you:false});
+    await sb.from('people').insert({household_id:HOUSEHOLD_ID,name,role,annual_income,color_idx:colorIdx,is_you:false});
   }
   await loadPeople(); closePersonModal(); render();
   showToast('Saved!');
@@ -1520,7 +1574,8 @@ function openRecurDueModal(due){
   document.getElementById('recur-due-list').innerHTML=due.map(r=>{
     const payer=personById(r.payer_person_id);
     const cat=CATMAP[r.category]||CATMAP.other;
-    const splitLabel=r.split_pct===100?'Full':r.split_pct===50?'50/50':`${r.split_pct}%`;
+    const incomeDetails=r.split_method==='income'?incomeSplitDetails(r.payer_person_id):null;
+    const splitLabel=r.split_method==='income'?`Income · ${(incomeDetails?.otherPct??r.split_pct).toFixed(1)}% other`:r.split_pct===100?'Full':r.split_pct===50?'50/50':`${r.split_pct}%`;
     return`<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
       <div style="font-size:1.4rem;width:32px;text-align:center">${cat.icon}</div>
       <div style="flex:1;min-width:0">
@@ -1548,8 +1603,10 @@ window.addAllDueRecurring=async function(){
   const inserts=_dueRecurs.map(r=>{
     const day=Math.min(r.day_of_month||1,new Date(y,m,0).getDate());
     const dateStr=`${mk}-${String(day).padStart(2,'0')}`;
+    const incomeDetails=r.split_method==='income'?incomeSplitDetails(r.payer_person_id):null;
     return{household_id:HOUSEHOLD_ID,recur_id:r.id,name:r.name,category:r.category,
-      amount:r.amount,payer_person_id:r.payer_person_id,split_pct:r.split_pct,date:dateStr,month:mk};
+      amount:r.amount,payer_person_id:r.payer_person_id,split_pct:incomeDetails?Number(incomeDetails.otherPct.toFixed(4)):r.split_pct,
+      split_method:r.split_method==='income'?'income':'fixed',date:dateStr,month:mk};
   });
   await sb.from('bills').insert(inserts);
   await loadBills();

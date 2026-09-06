@@ -214,18 +214,19 @@
       `CREATE TABLE IF NOT EXISTS people (
         id TEXT PRIMARY KEY, household_id TEXT NOT NULL DEFAULT 'default', user_id TEXT,
         name TEXT NOT NULL, role TEXT DEFAULT '', note TEXT DEFAULT '', color_idx INTEGER NOT NULL DEFAULT 0,
-        is_you INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        is_you INTEGER NOT NULL DEFAULT 0, annual_income REAL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
       )`,
       `CREATE TABLE IF NOT EXISTS recurring_bills (
         id TEXT PRIMARY KEY, household_id TEXT NOT NULL DEFAULT 'default', name TEXT NOT NULL,
         category TEXT NOT NULL DEFAULT 'other', amount REAL NOT NULL, payer_person_id TEXT NOT NULL,
-        split_pct REAL NOT NULL DEFAULT 50, frequency TEXT NOT NULL DEFAULT 'monthly',
+        split_pct REAL NOT NULL DEFAULT 50, split_method TEXT NOT NULL DEFAULT 'fixed', frequency TEXT NOT NULL DEFAULT 'monthly',
         day_of_month INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
       )`,
       `CREATE TABLE IF NOT EXISTS bills (
         id TEXT PRIMARY KEY, household_id TEXT NOT NULL DEFAULT 'default', date TEXT NOT NULL,
         month TEXT NOT NULL, name TEXT NOT NULL, category TEXT NOT NULL DEFAULT 'other', amount REAL NOT NULL,
-        payer_person_id TEXT NOT NULL, split_pct REAL NOT NULL DEFAULT 50, recur_id TEXT,
+        payer_person_id TEXT NOT NULL, split_pct REAL NOT NULL DEFAULT 50,
+        split_method TEXT NOT NULL DEFAULT 'fixed', recur_id TEXT,
         created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
       )`,
       `CREATE TABLE IF NOT EXISTS history (
@@ -239,6 +240,20 @@
       "CREATE INDEX IF NOT EXISTS idx_history_created ON history(created_at)",
     ].map((sql) => ({ sql, args: [] }));
     await pipeline(schema, configOverride);
+
+    // Upgrade databases created by earlier BillSplit versions. SQLite does not
+    // support ADD COLUMN IF NOT EXISTS, so inspect each table first.
+    const upgrades = [
+      ["people", "annual_income", "REAL"],
+      ["bills", "split_method", "TEXT NOT NULL DEFAULT 'fixed'"],
+      ["recurring_bills", "split_method", "TEXT NOT NULL DEFAULT 'fixed'"],
+    ];
+    for (const [table, column, definition] of upgrades) {
+      const info = await execute(`PRAGMA table_info(${table})`, [], configOverride);
+      if (!info.rows.some((row) => row.name === column)) {
+        await execute(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`, [], configOverride);
+      }
+    }
   }
 
   window.BillSplitDB = {
