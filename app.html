@@ -188,6 +188,16 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 .export-title{font-size:.95rem;font-weight:800;margin-bottom:12px}
 .export-row{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
 
+/* Import */
+.import-section{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px;max-width:700px}
+.import-title{font-size:.95rem;font-weight:800;margin-bottom:7px}
+.import-note{font-size:.8rem;color:var(--muted);font-weight:500;line-height:1.5;margin-bottom:16px}
+.file-input{display:block;width:100%;background:var(--light);border:2px dashed var(--border);border-radius:10px;padding:14px;font-family:var(--font);font-size:.82rem;margin-bottom:16px;cursor:pointer}
+.import-preview{display:none;background:var(--light);border-radius:10px;padding:14px;margin:14px 0;font-size:.8rem;line-height:1.55}
+.import-preview.show{display:block}
+.import-preview strong{color:var(--ink)}
+.import-warning{color:#a75a20;font-weight:700;margin-top:7px}
+
 /* Reports view */
 .report-section{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px}
 .report-section-title{font-size:.95rem;font-weight:800;margin-bottom:16px;color:var(--text)}
@@ -290,6 +300,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
     <div class="sidebar-item" id="sn-history" onclick="switchView('history')"><span class="si-icon">📂</span> History</div>
     <div class="sidebar-item" id="sn-people" onclick="switchView('people')"><span class="si-icon">👥</span> People</div>
     <div class="sidebar-item" id="sn-export" onclick="switchView('export')"><span class="si-icon">📤</span> Export</div>
+    <div class="sidebar-item" id="sn-import" onclick="switchView('import')"><span class="si-icon">📥</span> Import</div>
     <div class="sidebar-item" id="sn-reports" onclick="switchView('reports')"><span class="si-icon">📊</span> Reports</div>
   </div>
   <div class="sidebar-section" id="sidebar-people-list"></div>
@@ -351,6 +362,22 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
           </div>
           <button class="btn btn-primary" onclick="exportCSV()">⬇ Download CSV</button>
         </div>
+      </div>
+    </div>
+    <div class="view-panel" id="view-import">
+      <div class="import-section">
+        <div class="import-title">Import from Splitwise</div>
+        <p class="import-note">Choose a Splitwise group export CSV. BillSplit can recreate completed settlements, including periods that contain partial payments, while later expenses remain outstanding.</p>
+        <label class="form-label" for="import-file">Splitwise CSV file</label>
+        <input class="file-input" id="import-file" type="file" accept=".csv,text/csv" onchange="previewSplitwiseImport(event)">
+        <label class="form-label" for="import-settlement-mode">Settlement handling</label>
+        <select class="form-input" id="import-settlement-mode">
+          <option value="payments">Use completed Splitwise settlements (recommended)</option>
+          <option value="months">Treat all completed months as settled</option>
+          <option value="active">Import every expense as outstanding</option>
+        </select>
+        <div class="import-preview" id="import-preview"></div>
+        <button class="btn btn-primary" id="import-run-btn" onclick="confirmSplitwiseImport()" disabled>Import Splitwise data</button>
       </div>
     </div>
   </div>
@@ -494,7 +521,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script src="turso.js?v=20260906-3"></script>
+<script src="turso.js?v=20260906-4"></script>
 <script>
 const HOUSEHOLD_ID='default';
 const sb=BillSplitDB;
@@ -532,6 +559,7 @@ let recurOn=false;
 let editingId=null;
 let editingPersonId=null;
 let myPersonId=null; // the "you" person's DB id
+let splitwiseImport=null;
 
 // ── INIT ──────────────────────────────────────────────────────────
 async function init(){
@@ -613,7 +641,7 @@ function showToast(msg){
 }
 
 // ── DEVICE SETTINGS ───────────────────────────────────────────────
-function openSettings(){window.location.href='index.html?settings=1&v=20260906-3';}
+function openSettings(){window.location.href='index.html?settings=1&v=20260906-4';}
 function checkForUpdates(){window.location.href=`app.html?v=${Date.now()}`;}
 
 // ── CONFIRM DIALOG ────────────────────────────────────────────────
@@ -835,6 +863,184 @@ async function exportCSV(){
   showToast('CSV downloaded!');
 }
 
+// ── SPLITWISE IMPORT ─────────────────────────────────────────────
+function parseCSV(text){
+  const rows=[];let row=[],field='',quoted=false;
+  for(let i=0;i<text.length;i++){
+    const char=text[i];
+    if(quoted){
+      if(char==='"'&&text[i+1]==='"'){field+='"';i++;}
+      else if(char==='"')quoted=false;
+      else field+=char;
+    }else if(char==='"')quoted=true;
+    else if(char===','){row.push(field);field='';}
+    else if(char==='\n'){row.push(field);if(row.some(value=>value.trim()!==''))rows.push(row);row=[];field='';}
+    else if(char!=='\r')field+=char;
+  }
+  row.push(field);if(row.some(value=>value.trim()!==''))rows.push(row);
+  return rows;
+}
+
+function importHash(value){
+  let hash=2166136261;
+  for(let i=0;i<value.length;i++){hash^=value.charCodeAt(i);hash=Math.imul(hash,16777619);}
+  return(hash>>>0).toString(16).padStart(8,'0');
+}
+
+function cleanImportedText(value){return String(value||'').replace(/[<>\u0000-\u001f]/g,'').trim();}
+
+function mapSplitwiseCategory(category,description){
+  const cat=category.trim().toLowerCase(),desc=description.toLowerCase();
+  const direct={
+    'rent':'mortgage','mortgage':'mortgage','groceries':'groceries','electricity':'electric',
+    'tv/phone/internet':'internet','insurance':'insurance','utilities - other':'other',
+    'household supplies':'home','furniture':'home','home - other':'home','services':'home',
+    'dining out':'dining','liquor':'groceries','car':'car','movies':'streaming','hotel':'other'
+  };
+  if(cat==='general'||cat==='utilities - other'){
+    if(/netflix|hulu|youtube|disney|stream|paramount|peacock|spotify|apple tv/.test(desc))return'streaming';
+    if(/internet|starlink|phone|mobile/.test(desc))return'internet';
+    if(/electric|power/.test(desc))return'electric';
+    if(/insurance|geico/.test(desc))return'insurance';
+    if(/mortgage|rent/.test(desc))return'mortgage';
+    if(/grocery|groceries/.test(desc))return'groceries';
+    if(/gas|fuel/.test(desc))return'gas';
+    if(/medical|health|doctor|pharmacy/.test(desc))return'medical';
+    if(/car|auto|vehicle/.test(desc))return'car';
+    if(/restaurant|dining|dinner|lunch/.test(desc))return'dining';
+  }
+  return direct[cat]||'other';
+}
+
+function parseSplitwiseExport(text,fileName){
+  const matrix=parseCSV(text);
+  if(matrix.length<2)throw new Error('The CSV does not contain any Splitwise expenses.');
+  const headers=matrix[0].map((value,index)=>cleanImportedText(index===0?value.replace(/^\uFEFF/,''):value));
+  const headerIndex=Object.fromEntries(headers.map((header,index)=>[header.toLowerCase(),index]));
+  const required=['date','description','category','cost','currency'];
+  if(required.some(header=>headerIndex[header]===undefined))throw new Error('This does not look like a Splitwise group export. Required columns are missing.');
+  const fixed=new Set(required),participants=headers.filter(header=>!fixed.has(header.toLowerCase()));
+  if(participants.length!==2)throw new Error(`BillSplit supports Splitwise exports with exactly two people; this file has ${participants.length}.`);
+  const events=[],occurrences=new Map();let expenses=0,payments=0,skipped=0,minDate='',maxDate='';
+  matrix.slice(1).forEach((cells,offset)=>{
+    const get=name=>(cells[headerIndex[name]]??'').trim();
+    const date=get('date'),description=cleanImportedText(get('description')),category=cleanImportedText(get('category'));
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){skipped++;return;}
+    const currency=get('currency').toUpperCase();
+    if(currency!=='USD')throw new Error('BillSplit currently supports USD imports only.');
+    const shares=participants.map(name=>({name,value:Number(cells[headers.indexOf(name)]),raw:cells[headers.indexOf(name)]||''}));
+    if(shares.some(share=>!Number.isFinite(share.value))){skipped++;return;}
+    const netByParticipant=Object.fromEntries(shares.map(share=>[share.name,share.value]));
+    const rowBase=`${date}|${description}|${category}|${get('cost')}|${shares.map(share=>share.raw).join('|')}`;
+    const occurrence=(occurrences.get(rowBase)||0)+1;occurrences.set(rowBase,occurrence);const rowKey=`${rowBase}|${occurrence}`;
+    if(category.toLowerCase()==='payment'){minDate=!minDate||date<minDate?date:minDate;maxDate=!maxDate||date>maxDate?date:maxDate;events.push({type:'payment',date,key:rowKey,netByParticipant});payments++;return;}
+    const cost=Number(get('cost'));
+    if(!Number.isFinite(cost)||cost<=0){skipped++;return;}
+    const payer=shares.filter(share=>share.value>0.004).sort((a,b)=>b.value-a.value)[0];
+    if(!payer){skipped++;return;}
+    const rawPct=Math.min(100,Math.max(0,Number((payer.value/cost*100).toFixed(2))));
+    const splitPct=Math.abs(rawPct-50)<=.1?50:Math.abs(rawPct-100)<=.1?100:rawPct;
+    minDate=!minDate||date<minDate?date:minDate;maxDate=!maxDate||date>maxDate?date:maxDate;
+    events.push({type:'expense',payerName:payer.name,netByParticipant,bill:{
+      id:`sw-${date.replace(/-/g,'')}-${importHash(rowKey)}`,household_id:HOUSEHOLD_ID,date,month:date.slice(0,7),
+      name:description||category||'Splitwise expense',category:mapSplitwiseCategory(category,description),amount:cost,
+      split_pct:splitPct,recur_id:null
+    }});expenses++;
+  });
+  if(!expenses)throw new Error('No valid USD expenses were found in this file.');
+  const referencePerson=participants[0];
+  let runningBalance=0,completedSettlements=0,partialPayments=0,outstandingAfterLastSettlement=0;
+  events.forEach(event=>{
+    runningBalance+=event.netByParticipant[referencePerson];
+    if(event.type==='payment'){
+      event.completesSettlement=Math.abs(runningBalance)<=.02;
+      if(event.completesSettlement){completedSettlements++;runningBalance=0;outstandingAfterLastSettlement=0;}
+      else partialPayments++;
+    }else outstandingAfterLastSettlement++;
+  });
+  return{fileName,participants,events,expenses,payments,completedSettlements,partialPayments,skipped,minDate,maxDate,outstandingAfterLastSettlement};
+}
+
+window.previewSplitwiseImport=async function(event){
+  const file=event.target.files?.[0],preview=document.getElementById('import-preview'),button=document.getElementById('import-run-btn');
+  splitwiseImport=null;button.disabled=true;preview.classList.remove('show');
+  if(!file)return;
+  try{
+    splitwiseImport=parseSplitwiseExport(await file.text(),file.name);
+    const missing=splitwiseImport.participants.filter(name=>!people.some(person=>person.name.trim().toLowerCase()===name.toLowerCase()));
+    const partialText=splitwiseImport.partialPayments?` · ${splitwiseImport.partialPayments} partial payment${splitwiseImport.partialPayments===1?'':'s'} carried forward`:'';
+    preview.innerHTML=`<strong>${splitwiseImport.expenses.toLocaleString()} expenses</strong> from ${splitwiseImport.minDate} through ${splitwiseImport.maxDate}<br>${splitwiseImport.completedSettlements} completed settlement${splitwiseImport.completedSettlements===1?'':'s'} detected${partialText} · ${splitwiseImport.outstandingAfterLastSettlement} expense${splitwiseImport.outstandingAfterLastSettlement===1?'':'s'} after the last completed settlement<br>People: ${splitwiseImport.participants.join(' and ')}${splitwiseImport.skipped?`<div class="import-warning">${splitwiseImport.skipped} summary or invalid row${splitwiseImport.skipped===1?' was':'s were'} skipped.</div>`:''}${missing.length?`<div class="import-warning">Will create: ${missing.join(', ')}</div>`:''}`;
+    preview.classList.add('show');button.disabled=false;
+  }catch(error){preview.textContent=error.message;preview.classList.add('show');}
+};
+
+function confirmSplitwiseImport(){
+  if(!splitwiseImport)return;
+  const mode=document.getElementById('import-settlement-mode').value;
+  const modeText=mode==='payments'?'use completed Splitwise settlements as history boundaries':mode==='months'?'archive every completed calendar month':'leave every expense outstanding';
+  showConfirm('Import Splitwise data?',`Import ${splitwiseImport.expenses.toLocaleString()} expenses and ${modeText}? Existing imported rows will not be duplicated.`,'Import',runSplitwiseImport);
+}
+
+function importedHistoryRecord(group,settledDate,key){
+  if(!group.length)return null;
+  const months=[...new Set(group.map(bill=>bill.month))].sort();
+  const label=months.length===1?monthLabel(months[0]):`${monthLabel(months[0])} – ${monthLabel(months[months.length-1])}`;
+  const paid={};people.forEach(person=>paid[person.id]=0);
+  let total=0,balance=0;
+  group.forEach(bill=>{const amount=Number(bill.amount),owed=amount*(Number(bill.split_pct)/100);total+=amount;paid[bill.payer_person_id]=(paid[bill.payer_person_id]||0)+amount;balance+=bill.payer_person_id===myPersonId?owed:-owed;});
+  const displayDate=new Date(`${settledDate}T12:00:00`).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  return{id:`sw-history-${importHash(key)}`,household_id:HOUSEHOLD_ID,month_key:settledDate.slice(0,7),month_label:label,balance:Number(balance.toFixed(2)),total:Number(total.toFixed(2)),paid_summary:paid,bills_snapshot:group,settled_on:displayDate};
+}
+
+async function insertImportChunks(table,records){
+  for(let index=0;index<records.length;index+=75){const result=await sb.from(table).insert(records.slice(index,index+75));if(result.error)throw result.error;}
+}
+
+async function runSplitwiseImport(){
+  if(!splitwiseImport)return;
+  const button=document.getElementById('import-run-btn');button.disabled=true;button.textContent='Importing…';
+  try{
+    const personByName=new Map(people.map(person=>[person.name.trim().toLowerCase(),person]));
+    for(const name of splitwiseImport.participants){
+      if(personByName.has(name.toLowerCase()))continue;
+      const person={id:`sw-person-${importHash(name.toLowerCase())}`,household_id:HOUSEHOLD_ID,name,role:'Imported from Splitwise',color_idx:people.length%AVATAR_COLORS.length,is_you:false};
+      const result=await sb.from('people').insert(person);if(result.error)throw result.error;people.push(person);personByName.set(name.toLowerCase(),person);
+    }
+
+    const currentIds=new Set(bills.map(bill=>bill.id)),archivedIds=new Set();
+    history.forEach(item=>(item.bills_snapshot||[]).forEach(bill=>archivedIds.add(bill.id)));
+    const events=splitwiseImport.events.map(event=>event.type==='payment'?event:{...event,bill:{...event.bill,payer_person_id:personByName.get(event.payerName.toLowerCase()).id}}).filter(event=>event.type==='payment'||!archivedIds.has(event.bill.id));
+    const mode=document.getElementById('import-settlement-mode').value,historyRecords=[];let activeBills=[];
+
+    if(mode==='payments'){
+      let group=[];
+      events.forEach(event=>{if(event.type==='expense')group.push(event.bill);else if(event.completesSettlement&&group.length){historyRecords.push(importedHistoryRecord(group,event.date,event.key));group=[];}});
+      activeBills=group;
+    }else if(mode==='months'){
+      const groups={};
+      events.filter(event=>event.type==='expense').forEach(event=>{(groups[event.bill.month]??=[]).push(event.bill);});
+      Object.entries(groups).sort().forEach(([month,group])=>{
+        if(month<monthKey()){const[y,m]=month.split('-').map(Number),lastDay=new Date(y,m,0).getDate();historyRecords.push(importedHistoryRecord(group,`${month}-${String(lastDay).padStart(2,'0')}`,`month|${month}`));}
+        else activeBills.push(...group);
+      });
+    }else activeBills=events.filter(event=>event.type==='expense').map(event=>event.bill);
+
+    const existingHistoryIds=new Set(history.map(item=>item.id));
+    const newHistory=historyRecords.filter(record=>record&&!existingHistoryIds.has(record.id));
+    const movingCurrentIds=new Set(newHistory.flatMap(record=>record.bills_snapshot.map(bill=>bill.id)).filter(id=>currentIds.has(id)));
+    const newActive=activeBills.filter(bill=>!currentIds.has(bill.id));
+    await insertImportChunks('history',newHistory);
+    const moving=[...movingCurrentIds];
+    for(let index=0;index<moving.length;index+=75)await BillSplitDB.pipeline(moving.slice(index,index+75).map(id=>({sql:'DELETE FROM bills WHERE id = ?',args:[id]})));
+    await insertImportChunks('bills',newActive);
+    await Promise.all([loadPeople(),loadBills(),loadHistory()]);
+    const importedCount=newHistory.reduce((sum,record)=>sum+record.bills_snapshot.length,0)+newActive.length;
+    splitwiseImport=null;document.getElementById('import-file').value='';document.getElementById('import-preview').classList.remove('show');
+    switchView('ledger');showToast(importedCount?`${importedCount.toLocaleString()} Splitwise expenses imported`:'No new Splitwise expenses found');
+  }catch(error){console.error(error);document.getElementById('import-preview').textContent=`Import stopped: ${error.message}`;document.getElementById('import-preview').classList.add('show');}
+  finally{button.disabled=!splitwiseImport;button.textContent='Import Splitwise data';}
+}
+
 // ── REPORTS ───────────────────────────────────────────────────────
 function renderReports(){
   const el=document.getElementById('reports-area');
@@ -964,13 +1170,14 @@ function buildLineChart(values){
 
 // ── TOPBAR ────────────────────────────────────────────────────────
 function renderTopbar(){
-  const titles={ledger:'Winona',recurring:'Recurring Bills',history:'History',people:'People',export:'Export',reports:'Reports'};
+  const titles={ledger:'Winona',recurring:'Recurring Bills',history:'History',people:'People',export:'Export',import:'Import',reports:'Reports'};
   const subs={
     ledger:bills.length?`${bills.length} outstanding expense${bills.length===1?'':'s'}`:'All settled up',
     recurring:`${recurs.length} bills configured`,
     history:`${history.length} months archived`,
     people:`${people.length} people`,
     export:'Download expenses as CSV',
+    import:'Bring in a Splitwise group export',
     reports:'Spending trends across all months'
   };
   document.getElementById('tb-title').textContent=titles[activeView]||'Winona';
@@ -1252,7 +1459,7 @@ function switchView(v){
   activeView=v;
   document.querySelectorAll('.view-panel').forEach(el=>el.classList.remove('active'));
   document.getElementById(`view-${v}`).classList.add('active');
-  ['ledger','recurring','history','people','export','reports'].forEach(n=>{
+  ['ledger','recurring','history','people','export','import','reports'].forEach(n=>{
     document.getElementById(`sn-${n}`)?.classList.toggle('active',n===v);
     document.getElementById(`mn-${n}`)?.classList.toggle('active',n===v);
   });

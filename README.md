@@ -13,6 +13,7 @@ Household expense tracker for two — split bills, track spending, and settle up
 - Archives expenses and balance details when a period is settled
 - Shows spending reports by month and category
 - Exports expenses by year as CSV
+- Imports a two-person Splitwise group export, including settlement history
 - Works on desktop and mobile with no installation or application server
 
 ## Stack
@@ -46,6 +47,16 @@ The percentage stored on each expense is the amount the non-payer owes the payer
 - A custom value such as `30` means the other person owes 30%
 
 Settling up copies the current expenses into a history snapshot and clears the active ledger. Recurring templates are not inserted automatically; BillSplit prompts when templates appear due and lets the user add them.
+
+## Importing from Splitwise
+
+Choose **Import** directly below **Export** in the left sidebar, then select the CSV exported from a two-person Splitwise group. Review the preview and choose how BillSplit should handle old expenses:
+
+- **Use completed Splitwise settlements** (recommended) detects when the running Splitwise balance returned to zero. Completed periods become history, partial payments carry into the next period, and expenses after the last completed settlement remain outstanding.
+- **Treat all completed months as settled** archives every calendar month before the current month. This is useful when the export does not contain dependable payment history.
+- **Import every expense as outstanding** places all imported expenses in the active ledger.
+
+The importer supports USD exports with exactly two people. It creates either person if their name is not already in BillSplit, preserves custom split percentages, skips Splitwise's final balance summary row, and assigns stable IDs so importing the same export again does not duplicate expenses. Payment rows determine settlement boundaries but are not themselves added as expenses.
 
 ## Files
 
