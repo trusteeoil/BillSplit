@@ -295,7 +295,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
     <div class="bal-amount" id="sb-amount">—</div>
     <div class="bal-sub" id="sb-sub"></div>
     <button class="btn btn-secondary" onclick="openSettleModal();closeSidebar();" style="width:100%;margin-bottom:8px;padding:10px">Settle up</button>
-    <button class="signout-btn" onclick="signOut()">Sign out</button>
+    <button class="signout-btn" onclick="openSettings()">⚙ Database &amp; person settings</button>
     <button class="signout-btn" onclick="location.reload()" style="margin-top:6px">↻ Check for updates</button>
   </div>
 </aside>
@@ -491,15 +491,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="turso.js"></script>
 <script>
-// ── CONFIG — replace these with your actual values ──
-const SUPABASE_URL = 'https://gugwjzypsvlngjkdwwnm.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_J4zTIQr4gVEf-SLD6K9HNA_VodwWdNX';
-const HOUSEHOLD_ID = 'c35db575-9ffe-4d0d-be5b-0ec5264f2206';
-// ────────────────────────────────────────────────────
-
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const HOUSEHOLD_ID='default';
+const sb=BillSplitDB;
 
 // ── CONSTANTS ─────────────────────────────────────────────────────
 const CATS=[
@@ -537,17 +532,17 @@ let myPersonId=null; // the "you" person's DB id
 
 // ── INIT ──────────────────────────────────────────────────────────
 async function init(){
-  // Auth guard
-  const{data:{session}}=await sb.auth.getSession();
-  if(!session){window.location.href='index.html';return;}
+  // This device needs both a Turso connection and a selected person.
+  if(!BillSplitDB.getConfig()||!BillSplitDB.getPersonId()){window.location.href='index.html';return;}
 
-  // Load all data in parallel
-  await Promise.all([loadPeople(), loadBills(), loadRecurs(), loadHistory()]);
+  try{
+    await BillSplitDB.execute('SELECT 1 AS connected');
+    await Promise.all([loadPeople(), loadBills(), loadRecurs(), loadHistory()]);
+  }catch(error){console.error(error);window.location.href='index.html?settings=1';return;}
 
-  // Figure out which person is "you" by matching auth user_id
-  const authUserId=session.user.id;
-  const me=people.find(p=>p.user_id===authUserId)||people.find(p=>p.is_you);
-  if(me) myPersonId=me.id;
+  const me=people.find(p=>p.id===BillSplitDB.getPersonId());
+  if(!me){BillSplitDB.setPersonId(null);window.location.href='index.html';return;}
+  myPersonId=me.id;
   selPayerId=myPersonId;
 
   render();
@@ -557,25 +552,25 @@ async function init(){
 // ── DATA LOADERS ──────────────────────────────────────────────────
 async function loadPeople(){
   const{data,error}=await sb.from('people').select('*').eq('household_id',HOUSEHOLD_ID).order('created_at');
-  if(error){console.error(error);return;}
+  if(error)throw error;
   people=data||[];
 }
 
 async function loadBills(){
   const{data,error}=await sb.from('bills').select('*').eq('household_id',HOUSEHOLD_ID).order('date',{ascending:false});
-  if(error){console.error(error);return;}
+  if(error)throw error;
   bills=data||[];
 }
 
 async function loadRecurs(){
   const{data,error}=await sb.from('recurring_bills').select('*').eq('household_id',HOUSEHOLD_ID).order('created_at');
-  if(error){console.error(error);return;}
+  if(error)throw error;
   recurs=data||[];
 }
 
 async function loadHistory(){
   const{data,error}=await sb.from('history').select('*').eq('household_id',HOUSEHOLD_ID).order('created_at',{ascending:false});
-  if(error){console.error(error);return;}
+  if(error)throw error;
   history=data||[];
 }
 
@@ -614,11 +609,8 @@ function showToast(msg){
   setTimeout(()=>t.classList.remove('show'),2500);
 }
 
-// ── AUTH ──────────────────────────────────────────────────────────
-async function signOut(){
-  await sb.auth.signOut();
-  window.location.href='index.html';
-}
+// ── DEVICE SETTINGS ───────────────────────────────────────────────
+function openSettings(){window.location.href='index.html?settings=1';}
 
 // ── CONFIRM DIALOG ────────────────────────────────────────────────
 let confirmCallback=null;

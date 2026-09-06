@@ -1,249 +1,65 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
-    />
-    <title>BillSplit</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <style>
-      :root {
-        --green: #5bc5a7;
-        --green-dark: #3ea98a;
-        --orange: #e67e5a;
-        --bg: #f4f5f7;
-        --surface: #ffffff;
-        --border: #e2e4e9;
-        --ink: #1a1c21;
-        --muted: #7a8294;
-        --font: "Nunito", sans-serif;
-      }
-      * {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
-      }
-      body {
-        font-family: var(--font);
-        background: var(--bg);
-        color: var(--ink);
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-      }
-      .card {
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 20px;
-        padding: 40px 36px;
-        width: 100%;
-        max-width: 400px;
-        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-      }
-      .logo {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 32px;
-        justify-content: center;
-      }
-      .logo-icon {
-        width: 44px;
-        height: 44px;
-        background: var(--green);
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.4rem;
-      }
-      .logo-text {
-        font-size: 1.4rem;
-        font-weight: 800;
-        letter-spacing: -0.3px;
-      }
-      .logo-sub {
-        font-size: 0.75rem;
-        color: var(--muted);
-        font-weight: 500;
-      }
-      h2 {
-        font-size: 1.3rem;
-        font-weight: 800;
-        margin-bottom: 6px;
-        text-align: center;
-      }
-      .subtitle {
-        font-size: 0.82rem;
-        color: var(--muted);
-        font-weight: 500;
-        text-align: center;
-        margin-bottom: 28px;
-      }
-      .form-label {
-        display: block;
-        font-size: 0.65rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--muted);
-        margin-bottom: 5px;
-      }
-      .form-input {
-        width: 100%;
-        background: var(--bg);
-        border: 2px solid transparent;
-        border-radius: 10px;
-        padding: 11px 14px;
-        font-family: var(--font);
-        font-size: 0.92rem;
-        font-weight: 600;
-        color: var(--ink);
-        outline: none;
-        transition: border-color 0.15s;
-        margin-bottom: 14px;
-      }
-      .form-input:focus {
-        border-color: var(--orange);
-        background: #fff;
-      }
-      .btn {
-        width: 100%;
-        font-family: var(--font);
-        font-size: 0.92rem;
-        font-weight: 700;
-        padding: 13px;
-        border-radius: 10px;
-        border: none;
-        cursor: pointer;
-        background: var(--orange);
-        color: #fff;
-        transition:
-          opacity 0.15s,
-          transform 0.1s;
-        margin-top: 4px;
-      }
-      .btn:hover {
-        opacity: 0.88;
-      }
-      .btn:active {
-        transform: scale(0.98);
-      }
-      .btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-      .error {
-        background: #fef2f2;
-        border: 1px solid #fecaca;
-        border-radius: 8px;
-        padding: 10px 14px;
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: #dc2626;
-        margin-bottom: 14px;
-        display: none;
-      }
-      .error.show {
-        display: block;
-      }
-      .loading {
-        display: none;
-      }
-      .btn.loading-state .label {
-        display: none;
-      }
-      .btn.loading-state .loading {
-        display: inline;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="card">
-      <div class="logo">
-        <div class="logo-icon">🏠</div>
-        <div>
-          <div class="logo-text">BillSplit</div>
-        </div>
-      </div>
-      <h2>Welcome back</h2>
-      <p class="subtitle">Sign in to continue</p>
-      <div class="error" id="error-msg"></div>
-      <label class="form-label">Email</label>
-      <input
-        type="email"
-        class="form-input"
-        id="email"
-        placeholder="you@example.com"
-        autocomplete="email"
-      />
-      <label class="form-label">Password</label>
-      <input
-        type="password"
-        class="form-input"
-        id="password"
-        placeholder="••••••••"
-        autocomplete="current-password"
-      />
-      <button class="btn" id="login-btn" onclick="login()">
-        <span class="label">Sign in</span>
-        <span class="loading">Signing in...</span>
-      </button>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-      // ── CONFIG — replace these with your actual values ──
-      const SUPABASE_URL = "https://gugwjzypsvlngjkdwwnm.supabase.co";
-      const SUPABASE_KEY = "sb_publishable_J4zTIQr4gVEf-SLD6K9HNA_VodwWdNX";
-      // ────────────────────────────────────────────────────
-
-      const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-      // If already logged in, go straight to app
-      sb.auth.getSession().then(({ data: { session } }) => {
-        if (session) window.location.href = "app.html";
-      });
-
-      async function login() {
-        const email = document.getElementById("email").value.trim();
-        const password = document.getElementById("password").value;
-        const btn = document.getElementById("login-btn");
-        const err = document.getElementById("error-msg");
-        err.classList.remove("show");
-        if (!email || !password) {
-          showError("Please enter your email and password.");
-          return;
-        }
-        btn.classList.add("loading-state");
-        btn.disabled = true;
-        const { error } = await sb.auth.signInWithPassword({ email, password });
-        btn.classList.remove("loading-state");
-        btn.disabled = false;
-        if (error) {
-          showError(error.message);
-          return;
-        }
-        window.location.href = "app.html";
-      }
-
-      function showError(msg) {
-        const el = document.getElementById("error-msg");
-        el.textContent = msg;
-        el.classList.add("show");
-      }
-
-      // Allow enter key to submit
-      document.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") login();
-      });
-    </script>
-  </body>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>BillSplit Setup</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{--green:#5bc5a7;--green-dark:#3ea98a;--orange:#e67e5a;--bg:#f4f5f7;--surface:#fff;--border:#e2e4e9;--ink:#1a1c21;--muted:#7a8294;--font:'Nunito',sans-serif}
+    *{box-sizing:border-box;margin:0;padding:0}body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:36px;width:100%;max-width:440px;box-shadow:0 4px 24px rgba(0,0,0,.06)}
+    .logo{display:flex;align-items:center;gap:12px;margin-bottom:28px;justify-content:center}.logo-icon{width:44px;height:44px;background:var(--green);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem}.logo-text{font-size:1.4rem;font-weight:800}
+    h2{font-size:1.3rem;font-weight:800;margin-bottom:6px;text-align:center}.subtitle{font-size:.84rem;color:var(--muted);font-weight:500;text-align:center;margin-bottom:24px;line-height:1.45}
+    .form-label{display:block;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:5px}.form-input{width:100%;background:var(--bg);border:2px solid transparent;border-radius:10px;padding:11px 14px;font:600 .92rem var(--font);color:var(--ink);outline:none;margin-bottom:14px}.form-input:focus{border-color:var(--orange);background:#fff}
+    .token-wrap{position:relative}.token-wrap .form-input{padding-right:62px}.show-token{position:absolute;right:9px;top:8px;border:0;background:transparent;color:var(--muted);font:700 .72rem var(--font);cursor:pointer;padding:5px}
+    .btn{width:100%;font:700 .92rem var(--font);padding:13px;border-radius:10px;border:0;cursor:pointer;background:var(--orange);color:#fff;margin-top:4px}.btn:hover{opacity:.88}.btn:disabled{opacity:.5;cursor:not-allowed}.btn.secondary{background:var(--bg);color:var(--ink);border:1px solid var(--border)}.btn.danger{background:transparent;color:#c24138;border:1px solid #f2c7c3;margin-top:12px}
+    .error{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;font-size:.8rem;font-weight:600;color:#dc2626;margin-bottom:14px;display:none}.error.show{display:block}.note{font-size:.72rem;color:var(--muted);line-height:1.45;margin:0 0 16px}.hidden{display:none!important}
+    .people{display:grid;gap:10px;margin-bottom:18px}.person{display:flex;align-items:center;gap:12px;width:100%;padding:13px;border:1px solid var(--border);background:#fff;border-radius:12px;cursor:pointer;text-align:left;font-family:var(--font)}.person:hover{border-color:var(--green);background:rgba(91,197,167,.06)}.avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800}.person-name{font-size:.95rem;font-weight:800}.person-role{font-size:.72rem;color:var(--muted)}
+    .divider{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.7rem;font-weight:700;margin:18px 0}.divider:before,.divider:after{content:'';height:1px;background:var(--border);flex:1}.connected{font-size:.72rem;color:var(--green-dark);font-weight:700;text-align:center;margin-bottom:18px}.back{border:0;background:none;color:var(--muted);font:700 .78rem var(--font);cursor:pointer;display:block;margin:16px auto 0}@media(max-width:480px){.card{padding:28px 22px}}
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="logo"><div class="logo-icon">🏠</div><div class="logo-text">BillSplit</div></div>
+    <section id="connection-step">
+      <h2 id="connection-title">Connect your database</h2>
+      <p class="subtitle">Enter the Turso credentials shared by your household. They stay in this browser and are never added to the website code.</p>
+      <div class="error" id="connection-error"></div>
+      <label class="form-label" for="database-url">Turso database URL</label>
+      <input class="form-input" id="database-url" type="url" placeholder="libsql://your-database.turso.io" autocomplete="url" autocapitalize="none" spellcheck="false">
+      <label class="form-label" for="database-token">Database token</label>
+      <div class="token-wrap"><input class="form-input" id="database-token" type="password" placeholder="Paste your database token" autocomplete="off" autocapitalize="none" spellcheck="false"><button class="show-token" type="button" onclick="toggleToken()">Show</button></div>
+      <p class="note">Use a database token, not your Turso account or Platform API token. Anyone using this browser profile can access the saved credentials.</p>
+      <button class="btn" id="connect-btn" onclick="connectDatabase()">Connect &amp; continue</button>
+      <button class="btn danger hidden" id="forget-btn" onclick="forgetConnection()">Forget database on this device</button>
+      <button class="back hidden" id="cancel-settings" onclick="location.href='app.html'">Cancel</button>
+    </section>
+    <section class="hidden" id="person-step">
+      <h2>Who are you?</h2>
+      <p class="subtitle">Choose your name on this device. This only changes whose perspective is used for balances.</p>
+      <div class="connected">✓ Database connected</div><div class="error" id="person-error"></div><div class="people" id="people-list"></div>
+      <div class="divider">OR ADD SOMEONE</div>
+      <label class="form-label" for="new-person-name">Name</label><input class="form-input" id="new-person-name" type="text" placeholder="e.g. Steven" maxlength="60" autocomplete="name">
+      <label class="form-label" for="new-person-role">Label (optional)</label><input class="form-input" id="new-person-role" type="text" placeholder="e.g. Husband" maxlength="60">
+      <button class="btn secondary" id="add-person-btn" onclick="createPerson()">Create &amp; use this person</button><button class="back" onclick="showConnection()">← Database settings</button>
+    </section>
+  </main>
+  <script src="turso.js"></script>
+  <script>
+    const DEFAULT_HOUSEHOLD_ID='default',COLORS=['#e67e5a','#3d85c8','#5bc5a7','#9b59b6','#e67e22'];let people=[];
+    function showError(id,message){const el=document.getElementById(id);el.textContent=message;el.classList.add('show')}function clearError(id){document.getElementById(id).classList.remove('show')}
+    function setBusy(button,busy,label){button.disabled=busy;if(busy){button.dataset.label=button.textContent;button.textContent=label}else if(button.dataset.label)button.textContent=button.dataset.label}
+    function toggleToken(){const input=document.getElementById('database-token');input.type=input.type==='password'?'text':'password';document.querySelector('.show-token').textContent=input.type==='password'?'Show':'Hide'}
+    function showConnection(){document.getElementById('person-step').classList.add('hidden');document.getElementById('connection-step').classList.remove('hidden');const config=BillSplitDB.getConfig();if(config){document.getElementById('database-url').value=config.url;document.getElementById('database-token').value=config.token}}
+    async function connectDatabase(){const button=document.getElementById('connect-btn');clearError('connection-error');setBusy(button,true,'Connecting…');try{const config={url:BillSplitDB.normalizeUrl(document.getElementById('database-url').value),token:document.getElementById('database-token').value.trim()};if(!config.url||!config.token)throw new Error('Enter both the database URL and token.');await BillSplitDB.execute('SELECT 1 AS connected',[],config);await BillSplitDB.initializeSchema(config);BillSplitDB.saveConfig(config.url,config.token);await showPeople()}catch(error){showError('connection-error',error.message)}finally{setBusy(button,false)}}
+    async function showPeople(){clearError('person-error');const result=await BillSplitDB.from('people').select('*').eq('household_id',DEFAULT_HOUSEHOLD_ID).order('created_at');if(result.error)throw result.error;people=result.data||[];document.getElementById('people-list').innerHTML=people.length?people.map((person,index)=>`<button class="person" onclick="choosePerson('${person.id}')"><span class="avatar" style="background:${COLORS[(person.color_idx||index)%COLORS.length]}">${escapeHtml(person.name.charAt(0).toUpperCase())}</span><span><span class="person-name">${escapeHtml(person.name)}</span><br><span class="person-role">${escapeHtml(person.role||'Use this person')}</span></span></button>`).join(''):'<p class="note" style="text-align:center">No people yet. Add the first person below.</p>';document.getElementById('connection-step').classList.add('hidden');document.getElementById('person-step').classList.remove('hidden')}
+    function choosePerson(id){BillSplitDB.setPersonId(id);location.href='app.html'}
+    async function createPerson(){const name=document.getElementById('new-person-name').value.trim(),role=document.getElementById('new-person-role').value.trim(),button=document.getElementById('add-person-btn');clearError('person-error');if(!name){showError('person-error','Enter a name.');return}setBusy(button,true,'Creating…');const id=crypto.randomUUID(),result=await BillSplitDB.from('people').insert({id,household_id:DEFAULT_HOUSEHOLD_ID,name,role,color_idx:people.length%COLORS.length,is_you:false});setBusy(button,false);if(result.error){showError('person-error',result.error.message);return}choosePerson(id)}
+    function forgetConnection(){if(!confirm('Forget the Turso URL, token, and selected person on this device? Your database data will not be deleted.'))return;BillSplitDB.clearConfig();location.href='index.html'}
+    function escapeHtml(value){return String(value).replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]))}
+    async function start(){const config=BillSplitDB.getConfig(),settings=new URLSearchParams(location.search).has('settings');if(config){document.getElementById('database-url').value=config.url;document.getElementById('database-token').value=config.token;document.getElementById('forget-btn').classList.remove('hidden');if(settings){document.getElementById('connection-title').textContent='Database settings';document.getElementById('cancel-settings').classList.remove('hidden');return}try{await BillSplitDB.initializeSchema();const result=await BillSplitDB.from('people').select('*').eq('household_id',DEFAULT_HOUSEHOLD_ID);if(result.error)throw result.error;if((result.data||[]).some(person=>person.id===BillSplitDB.getPersonId())){location.href='app.html';return}await showPeople();return}catch(error){showError('connection-error',error.message)}}}
+    document.addEventListener('keydown',event=>{if(event.key==='Enter'&&!document.getElementById('connection-step').classList.contains('hidden'))connectDatabase()});start();
+  </script>
+</body>
 </html>
