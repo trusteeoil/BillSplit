@@ -50,13 +50,13 @@ Each person can save a gross yearly income under **Settings → People**. Choosi
 
 Income-based recurring templates recalculate the percentage from the current saved incomes when the due expense is added. This means updating an income affects future recurring expenses without changing expenses already in the ledger or history.
 
-Settling up copies the current expenses into a history snapshot and clears the active ledger. Recurring templates are not inserted automatically; BillSplit prompts when templates appear due and lets the user add them.
+Settling up copies the current expenses into a history snapshot and clears the active ledger. Recurring templates are added automatically when they become due.
 
 ### How recurring bills work
 
-BillSplit checks recurring templates after the app loads its people, active expenses, and history. A template is considered due when it has not already been added for the current month and enough months have passed for its frequency. A brand-new template also waits until its configured day of the month.
+BillSplit checks recurring templates after the app loads its people, active expenses, and history, and again after a recurring template is saved. A template is considered due when it has not already been added for the current month, its configured day has arrived, and enough months have passed for its frequency.
 
-The check opens a **Recurring Bills Due** prompt; it does not add expenses automatically. Choose **Add All** to create the listed expenses. Dismissing the prompt hides it on that browser for the rest of the current month. The app checks again on a later page load when it has not been dismissed for that month.
+Due templates are added to the ledger automatically with no confirmation window. BillSplit checks active expenses and archived history before inserting, so reloading the page does not add the same recurring template twice in one month. If several scheduled periods were missed, the check adds one expense for the current due period rather than creating a backlog of old expenses.
 
 ## Importing from Splitwise
 
