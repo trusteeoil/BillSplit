@@ -11,7 +11,7 @@ Household expense tracker for two — split bills, track spending, and settle up
 - Calculates the balance from the selected person's perspective
 - Stores reusable recurring-bill templates
 - Archives expenses and balance details when a period is settled
-- Shows spending reports by month and category
+- Shows yearly totals, monthly trends, category totals, payer comparisons, and largest expenses
 - Exports expenses by year as CSV
 - Imports a two-person Splitwise group export, including settlement history
 - Works on desktop and mobile with no installation or application server
@@ -66,7 +66,17 @@ Choose **Import** directly below **Export** in the left sidebar, then select the
 - **Treat all completed months as settled** archives every calendar month before the current month. This is useful when the export does not contain dependable payment history.
 - **Import every expense as outstanding** places all imported expenses in the active ledger.
 
-The importer supports USD exports with exactly two people. It creates either person if their name is not already in BillSplit, preserves custom split percentages, skips Splitwise's final balance summary row, and assigns stable IDs so importing the same export again does not duplicate expenses. Payment rows determine settlement boundaries but are not themselves added as expenses.
+The importer supports USD exports with exactly two people. It creates either person if their name is not already in BillSplit, preserves custom split percentages, skips Splitwise's final balance summary row, and assigns each source row a stable ID. Before every import it refreshes the current ledger and archived history from Turso, then skips IDs already found in either place. This makes repeated exports and retries safe without duplicating expenses. The preview shows how many rows are new and how many will be skipped. Payment rows determine settlement boundaries but are not themselves added as expenses.
+
+## Reports
+
+Reports can be browsed by year and include:
+
+- Total spending, monthly average, transaction count, and the largest month
+- How much each person paid upfront compared with their calculated share of costs
+- Annual category totals and percentages
+- The five largest expenses for the selected year
+- A monthly spending chart and expandable monthly category details
 
 ## Files
 
@@ -85,7 +95,7 @@ IDs are generated in the browser with `crypto.randomUUID()`. History snapshots a
 
 ## Settings
 
-Choose **Settings** from the sidebar to:
+Choose **Settings** from the sidebar to open the settings modal without leaving or reloading the app. From there you can:
 
 - See which person is active on the current device
 - Switch to a different person
@@ -95,7 +105,7 @@ Choose **Settings** from the sidebar to:
 
 Forgetting a connection only clears this browser. It does not delete anything from Turso.
 
-Selecting a person returns to the app using that person's perspective. Adding or editing a person stays within Settings so more changes can be made. Person records are shared through Turso, but each browser remembers its own selected person.
+Selecting a person updates the app immediately using that person's perspective. Adding or editing a person stays within the modal so more changes can be made. Person records are shared through Turso, but each browser remembers its own selected person.
 
 Settings is divided into three tabs:
 

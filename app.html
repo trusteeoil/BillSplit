@@ -134,6 +134,23 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 .modal-overlay.open{opacity:1;pointer-events:all}
 .modal{background:var(--surface);border-radius:16px;padding:24px;width:100%;min-width:0;max-width:480px;max-height:90vh;overflow-x:hidden;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;transform:translateY(20px) scale(.97);transition:transform .25s cubic-bezier(.34,1.2,.64,1);box-shadow:0 20px 60px rgba(0,0,0,.2)}
 .modal-overlay.open .modal{transform:translateY(0) scale(1)}
+#settings-overlay{z-index:210}
+#person-overlay{z-index:240}
+.settings-modal{max-width:620px}
+.settings-tabs{display:flex;gap:5px;background:var(--light);padding:4px;border-radius:11px;margin-bottom:20px}
+.settings-tab{flex:1;border:0;border-radius:8px;padding:9px 5px;background:transparent;color:var(--muted);font:700 .78rem var(--font);cursor:pointer}
+.settings-tab.active{background:var(--surface);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.settings-panel{display:none}.settings-panel.active{display:block}
+.settings-person-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-bottom:1px solid var(--border)}
+.settings-person-select{flex:1;min-width:0;display:flex;align-items:center;gap:11px;text-align:left;border:1px solid var(--border);background:var(--surface);border-radius:10px;padding:10px;cursor:pointer;font-family:var(--font)}
+.settings-person-select.current{border-color:var(--green);background:rgba(91,197,167,.08)}
+.settings-person-meta{font-size:.7rem;color:var(--muted);margin-top:2px;white-space:normal}
+.settings-note{font-size:.74rem;color:var(--muted);line-height:1.5;margin-bottom:14px}
+.settings-status{display:none;border-radius:9px;padding:10px 12px;margin-top:12px;font-size:.76rem;font-weight:700;line-height:1.4}
+.settings-status.show{display:block;background:rgba(91,197,167,.1);color:var(--green-dark)}
+.settings-status.error{background:#fef2f2;color:#c24138}
+.settings-actions{display:flex;gap:8px;flex-wrap:wrap}.settings-actions .btn{flex:1;min-width:150px}
+.token-field{position:relative}.token-field .form-input{padding-right:60px}.token-show{position:absolute;right:7px;top:6px;border:0;background:transparent;padding:6px;color:var(--muted);font:700 .72rem var(--font);cursor:pointer}
 .modal-title{font-size:1.15rem;font-weight:800;margin-bottom:20px;letter-spacing:-.3px;display:flex;justify-content:space-between;align-items:center}
 .modal-close{background:var(--light);border:none;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:1rem;color:var(--muted);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .modal-close:hover{background:var(--border);color:var(--ink)}
@@ -202,6 +219,18 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 /* Reports view */
 .report-section{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px}
 .report-section-title{font-size:.95rem;font-weight:800;margin-bottom:16px;color:var(--text)}
+.report-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.report-summary-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;min-width:0}
+.report-summary-label{font-size:.62rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.07em}
+.report-summary-value{font-size:1.15rem;font-weight:800;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.report-summary-sub{font-size:.66rem;color:var(--muted);margin-top:2px}
+.report-person-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.report-person-card{background:var(--light);border-radius:10px;padding:14px}
+.report-person-name{font-size:.86rem;font-weight:800;margin-bottom:10px}
+.report-metric{margin-top:8px}.report-metric-head{display:flex;justify-content:space-between;gap:8px;font-size:.7rem;color:var(--muted);font-weight:700;margin-bottom:4px}
+.report-mini-track{height:8px;background:var(--border);border-radius:5px;overflow:hidden}.report-mini-fill{height:100%;background:var(--blue);border-radius:5px}.report-mini-fill.share{background:var(--green)}
+.report-list-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.report-list-row:last-child{border-bottom:0}.report-list-main{flex:1;min-width:0}.report-list-title{font-size:.82rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.report-list-sub{font-size:.67rem;color:var(--muted);margin-top:2px}.report-list-value{font-size:.84rem;font-weight:800;flex-shrink:0}
 .report-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .report-bar-label{width:140px;font-size:.8rem;font-weight:600;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
 .report-bar-track{flex:1;background:var(--border);border-radius:4px;height:10px;overflow:hidden}
@@ -281,6 +310,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
   .exp-actions{gap:3px}
   .report-bar-label{width:100px}
   .report-bar-value{width:60px}
+  .report-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .report-person-grid{grid-template-columns:1fr}
+  .settings-actions{flex-direction:column}.settings-actions .btn{width:100%}
 }
 @media(max-width:400px){
   .cat-grid{grid-template-columns:repeat(3,1fr)}
@@ -474,6 +506,51 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
   </div>
 </div>
 
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settings-overlay">
+  <div class="modal settings-modal">
+    <div class="modal-title">
+      <span>Settings</span>
+      <button class="modal-close" onclick="closeSettings()" aria-label="Close settings">✕</button>
+    </div>
+    <div class="settings-tabs" role="tablist" aria-label="Settings sections">
+      <button class="settings-tab active" id="settings-tab-people" onclick="switchSettingsTab('people')">People</button>
+      <button class="settings-tab" id="settings-tab-connection" onclick="switchSettingsTab('connection')">Connection</button>
+      <button class="settings-tab" id="settings-tab-share" onclick="switchSettingsTab('share')">Share</button>
+    </div>
+
+    <section class="settings-panel active" id="settings-panel-people">
+      <p class="settings-note">Choose the person used on this device, or update household members and yearly incomes.</p>
+      <div id="settings-people-list"></div>
+      <button class="btn btn-primary" style="width:100%;margin-top:14px" onclick="openPersonModal(null)">+ Add person</button>
+      <div class="settings-status" id="settings-people-status"></div>
+    </section>
+
+    <section class="settings-panel" id="settings-panel-connection">
+      <p class="settings-note">These Turso credentials are saved only in this browser. Changing them switches this device to another database.</p>
+      <label class="form-label" for="settings-database-url">Turso database URL</label>
+      <input class="form-input" id="settings-database-url" type="url" autocomplete="url" autocapitalize="none" spellcheck="false">
+      <label class="form-label" for="settings-database-token">Database token</label>
+      <div class="token-field">
+        <input class="form-input" id="settings-database-token" type="password" autocomplete="off" autocapitalize="none" spellcheck="false">
+        <button class="token-show" type="button" onclick="toggleSettingsToken()">Show</button>
+      </div>
+      <div class="settings-actions">
+        <button class="btn btn-primary" id="settings-connect-btn" onclick="saveSettingsConnection()">Test &amp; save connection</button>
+        <button class="btn btn-danger" onclick="forgetSettingsConnection()">Forget on this device</button>
+      </div>
+      <div class="settings-status" id="settings-connection-status"></div>
+    </section>
+
+    <section class="settings-panel" id="settings-panel-share">
+      <p class="settings-note">Copy a private setup link for another household device. The link contains your database URL and token in its <code>#</code> fragment.</p>
+      <div class="import-warning" style="margin-bottom:14px">Base64 is not encryption. Anyone with the complete link can access the database.</div>
+      <button class="btn btn-primary" style="width:100%" onclick="copySettingsShareLink()">Copy private setup link</button>
+      <div class="settings-status" id="settings-share-status"></div>
+    </section>
+  </div>
+</div>
+
 <!-- PERSON MODAL -->
 <div class="modal-overlay" id="person-overlay">
   <div class="modal" style="max-width:380px">
@@ -516,7 +593,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--ink);min-height:10
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
-<script src="turso.js?v=20260907-3"></script>
+<script src="turso.js?v=20260907-4"></script>
 <script>
 const HOUSEHOLD_ID='default';
 const sb=BillSplitDB;
@@ -546,6 +623,7 @@ const AVATAR_COLORS=['#e67e5a','#3d85c8','#5bc5a7','#9b59b6','#e67e22'];
 let people=[], bills=[], recurs=[], history=[];
 let activeView='ledger';
 let reportYear=new Date().getFullYear();
+let reportYears=[];
 let selPayerId=null;
 let selSplitPct=50; // % the non-payer owes: 50=50/50, 0=personal, other=custom
 let selSplitMethod='fixed'; // fixed stores the chosen percent; income derives it from both incomes
@@ -611,6 +689,7 @@ function ordinal(n){const s=['th','st','nd','rd'];const v=n%100;return n+(s[(v-2
 function personById(id){return people.find(p=>p.id===id)||{name:'Unknown',color_idx:0}}
 function personInitial(name){return(name||'?')[0].toUpperCase()}
 function avatarColor(idx){return AVATAR_COLORS[(idx||0)%AVATAR_COLORS.length]}
+function escapeHtml(value){return String(value??'').replace(/[&<>'"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]))}
 function personIncome(person){
   if(!person||person.annual_income===null||person.annual_income===undefined||person.annual_income==='')return null;
   const value=Number(person.annual_income);
@@ -651,7 +730,63 @@ function showToast(msg){
 }
 
 // ── DEVICE SETTINGS ───────────────────────────────────────────────
-function openSettings(){window.location.href='index.html?settings=1&v=20260907-3';}
+function setSettingsStatus(id,message,isError=false){const el=document.getElementById(id);el.textContent=message;el.classList.toggle('error',isError);el.classList.toggle('show',Boolean(message));}
+function renderSettingsPeople(){
+  const selectedId=BillSplitDB.getPersonId(),list=document.getElementById('settings-people-list');
+  list.innerHTML=people.length?people.map(person=>`<div class="settings-person-row">
+    <button class="settings-person-select${person.id===selectedId?' current':''}" onclick="chooseSettingsPerson('${person.id}')">
+      <span class="person-avatar" style="width:36px;height:36px;font-size:1rem;background:${avatarColor(person.color_idx)}">${escapeHtml(personInitial(person.name))}</span>
+      <span style="min-width:0"><strong>${escapeHtml(person.name)}${person.id===selectedId?' · This device':''}</strong><div class="settings-person-meta">${escapeHtml(person.role||'Household member')} · ${escapeHtml(incomeLabel(person))}</div></span>
+    </button>
+    <button class="icon-btn" onclick="openPersonModal('${person.id}')" title="Edit ${escapeHtml(person.name)}">✏️</button>
+  </div>`).join(''):'<div class="empty" style="padding:24px 10px">No people in this database yet.</div>';
+}
+function switchSettingsTab(name){
+  ['people','connection','share'].forEach(tab=>{
+    document.getElementById(`settings-tab-${tab}`).classList.toggle('active',tab===name);
+    document.getElementById(`settings-panel-${tab}`).classList.toggle('active',tab===name);
+  });
+}
+function openSettings(){
+  closeSidebar();
+  const config=BillSplitDB.getConfig();
+  document.getElementById('settings-database-url').value=config?.url||'';
+  document.getElementById('settings-database-token').value=config?.token||'';
+  document.getElementById('settings-database-token').type='password';
+  document.querySelector('.token-show').textContent='Show';
+  ['settings-people-status','settings-connection-status','settings-share-status'].forEach(id=>setSettingsStatus(id,''));
+  renderSettingsPeople();switchSettingsTab('people');
+  document.getElementById('settings-overlay').classList.add('open');
+}
+function closeSettings(){
+  if(!people.some(person=>person.id===BillSplitDB.getPersonId())){switchSettingsTab('people');setSettingsStatus('settings-people-status','Choose a person for this device before closing Settings.',true);return;}
+  document.getElementById('settings-overlay').classList.remove('open');
+}
+function chooseSettingsPerson(id){BillSplitDB.setPersonId(id);myPersonId=id;selPayerId=id;render();renderSettingsPeople();setSettingsStatus('settings-people-status','Person selected for this device.');}
+function toggleSettingsToken(){const input=document.getElementById('settings-database-token'),button=document.querySelector('.token-show');input.type=input.type==='password'?'text':'password';button.textContent=input.type==='password'?'Show':'Hide';}
+async function saveSettingsConnection(){
+  const button=document.getElementById('settings-connect-btn');
+  const config={url:BillSplitDB.normalizeUrl(document.getElementById('settings-database-url').value),token:document.getElementById('settings-database-token').value.trim()};
+  if(!config.url||!config.token){setSettingsStatus('settings-connection-status','Enter both the database URL and token.',true);return;}
+  button.disabled=true;button.textContent='Testing…';setSettingsStatus('settings-connection-status','');
+  try{
+    await BillSplitDB.execute('SELECT 1 AS connected',[],config);await BillSplitDB.initializeSchema(config);BillSplitDB.saveConfig(config.url,config.token);
+    await Promise.all([loadPeople(),loadBills(),loadRecurs(),loadHistory()]);
+    const selected=people.find(person=>person.id===BillSplitDB.getPersonId());
+    if(selected){myPersonId=selected.id;selPayerId=selected.id;}else{BillSplitDB.setPersonId(null);myPersonId=null;selPayerId=null;}
+    render();renderSettingsPeople();setSettingsStatus('settings-connection-status','Connection saved successfully.');
+    if(!selected){switchSettingsTab('people');setSettingsStatus('settings-people-status','Choose or add a person for this database.',true);}
+  }catch(error){setSettingsStatus('settings-connection-status',error.message,true);}
+  finally{button.disabled=false;button.textContent='Test & save connection';}
+}
+function forgetSettingsConnection(){showConfirm('Forget this database?',`Remove the Turso connection and selected person from this browser? Database records will not be deleted.`,'Forget',()=>{BillSplitDB.clearConfig();location.href='index.html';});}
+function encodeSettingsShareData(value){const bytes=new TextEncoder().encode(JSON.stringify(value));let binary='';bytes.forEach(byte=>binary+=String.fromCharCode(byte));return btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function buildSettingsShareLink(){const config=BillSplitDB.getConfig();if(!config)throw new Error('Save a database connection first.');const url=new URL('index.html',location.href);url.search='';url.hash='connect='+encodeSettingsShareData({url:config.url,token:config.token});return url.toString();}
+function copySettingsTextFallback(text){const area=document.createElement('textarea');area.value=text;area.style.position='fixed';area.style.opacity='0';document.body.appendChild(area);area.select();const copied=document.execCommand('copy');area.remove();if(!copied)throw new Error('The browser could not copy the link.');}
+async function copySettingsShareLink(){
+  try{const link=buildSettingsShareLink();if(navigator.clipboard?.writeText){try{await navigator.clipboard.writeText(link);}catch(_){copySettingsTextFallback(link);}}else copySettingsTextFallback(link);setSettingsStatus('settings-share-status','Private setup link copied.');}
+  catch(error){setSettingsStatus('settings-share-status',error.message,true);}
+}
 function checkForUpdates(){window.location.href=`app.html?v=${Date.now()}`;}
 
 // ── CONFIRM DIALOG ────────────────────────────────────────────────
@@ -972,15 +1107,24 @@ function parseSplitwiseExport(text,fileName){
   return{fileName,participants,events,expenses,payments,completedSettlements,partialPayments,skipped,minDate,maxDate,outstandingAfterLastSettlement};
 }
 
+function knownExpenseIds(){
+  const ids=new Set(bills.map(bill=>bill.id));
+  history.forEach(item=>(item.bills_snapshot||[]).forEach(bill=>ids.add(bill.id)));
+  return ids;
+}
+
 window.previewSplitwiseImport=async function(event){
   const file=event.target.files?.[0],preview=document.getElementById('import-preview'),button=document.getElementById('import-run-btn');
   splitwiseImport=null;button.disabled=true;preview.classList.remove('show');
   if(!file)return;
   try{
     splitwiseImport=parseSplitwiseExport(await file.text(),file.name);
+    const knownIds=knownExpenseIds();
+    const newExpenses=splitwiseImport.events.filter(item=>item.type==='expense'&&!knownIds.has(item.bill.id)).length;
+    const alreadyImported=splitwiseImport.expenses-newExpenses;
     const missing=splitwiseImport.participants.filter(name=>!people.some(person=>person.name.trim().toLowerCase()===name.toLowerCase()));
     const partialText=splitwiseImport.partialPayments?` · ${splitwiseImport.partialPayments} partial payment${splitwiseImport.partialPayments===1?'':'s'} carried forward`:'';
-    preview.innerHTML=`<strong>${splitwiseImport.expenses.toLocaleString()} expenses</strong> from ${splitwiseImport.minDate} through ${splitwiseImport.maxDate}<br>${splitwiseImport.completedSettlements} completed settlement${splitwiseImport.completedSettlements===1?'':'s'} detected${partialText} · ${splitwiseImport.outstandingAfterLastSettlement} expense${splitwiseImport.outstandingAfterLastSettlement===1?'':'s'} after the last completed settlement<br>People: ${splitwiseImport.participants.join(' and ')}${splitwiseImport.skipped?`<div class="import-warning">${splitwiseImport.skipped} summary or invalid row${splitwiseImport.skipped===1?' was':'s were'} skipped.</div>`:''}${missing.length?`<div class="import-warning">Will create: ${missing.join(', ')}</div>`:''}`;
+    preview.innerHTML=`<strong>${splitwiseImport.expenses.toLocaleString()} expenses</strong> from ${splitwiseImport.minDate} through ${splitwiseImport.maxDate}<br><strong>${newExpenses.toLocaleString()} new</strong> · ${alreadyImported.toLocaleString()} already in BillSplit and will be skipped<br>${splitwiseImport.completedSettlements} completed settlement${splitwiseImport.completedSettlements===1?'':'s'} detected${partialText} · ${splitwiseImport.outstandingAfterLastSettlement} expense${splitwiseImport.outstandingAfterLastSettlement===1?'':'s'} after the last completed settlement<br>People: ${splitwiseImport.participants.map(escapeHtml).join(' and ')}${splitwiseImport.skipped?`<div class="import-warning">${splitwiseImport.skipped} summary or invalid row${splitwiseImport.skipped===1?' was':'s were'} skipped.</div>`:''}${missing.length?`<div class="import-warning">Will create: ${missing.map(escapeHtml).join(', ')}</div>`:''}`;
     preview.classList.add('show');button.disabled=false;
   }catch(error){preview.textContent=error.message;preview.classList.add('show');}
 };
@@ -1011,6 +1155,9 @@ async function runSplitwiseImport(){
   if(!splitwiseImport)return;
   const button=document.getElementById('import-run-btn');button.disabled=true;button.textContent='Importing…';
   try{
+    // Refresh from Turso before every run. This makes retries and exports used
+    // on multiple devices see rows that were inserted since the page loaded.
+    await Promise.all([loadPeople(),loadBills(),loadHistory()]);
     const personByName=new Map(people.map(person=>[person.name.trim().toLowerCase(),person]));
     for(const name of splitwiseImport.participants){
       if(personByName.has(name.toLowerCase()))continue;
@@ -1062,32 +1209,59 @@ function renderReports(){
 
   if(!deduped.length){el.innerHTML=`<div class="report-section"><div class="report-empty">No expense data yet. Add expenses or settle months to see reports.</div></div>`;return;}
 
-  // Group bills by month
   const billsByMonth={};
   deduped.forEach(b=>{
     const mk=b.month||b.date?.slice(0,7);
     if(!mk)return;
-    if(!billsByMonth[mk])billsByMonth[mk]=[];
-    billsByMonth[mk].push(b);
+    (billsByMonth[mk]??=[]).push(b);
   });
   const months=Object.keys(billsByMonth).sort().reverse();
-
-  // Monthly totals
   const monthTotals={};
   months.forEach(mk=>{monthTotals[mk]=billsByMonth[mk].reduce((s,b)=>s+Number(b.amount||0),0);});
 
-  // ── Section 1: Line chart ─────────────────────────────────────
-  const allYears=[...new Set(months.map(mk=>parseInt(mk.slice(0,4))))].sort();
+  reportYears=[...new Set(months.map(mk=>parseInt(mk.slice(0,4))))].sort();
   const curYear=new Date().getFullYear();
-  if(!allYears.includes(reportYear)) reportYear=allYears[allYears.length-1]||curYear;
-  const canPrev=allYears.some(y=>y<reportYear);
-  const canNext=allYears.some(y=>y>reportYear);
+  if(!reportYears.includes(reportYear))reportYear=reportYears[reportYears.length-1]||curYear;
+  const yearIndex=reportYears.indexOf(reportYear),canPrev=yearIndex>0,canNext=yearIndex<reportYears.length-1;
   const yearMonths=Array.from({length:12},(_,i)=>`${reportYear}-${String(i+1).padStart(2,'0')}`);
   const yearValues=yearMonths.map(mk=>monthTotals[mk]||0);
-  const hasYearData=yearValues.some(v=>v>0);
+  const yearBills=deduped.filter(b=>(b.date||b.month||'').startsWith(String(reportYear))).sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const yearTotal=yearBills.reduce((sum,bill)=>sum+Number(bill.amount||0),0);
+  const activeMonthCount=yearValues.filter(value=>value>0).length;
+  const monthlyAverage=activeMonthCount?yearTotal/activeMonthCount:0;
+  const largestMonthValue=Math.max(...yearValues,0),largestMonthIndex=yearValues.indexOf(largestMonthValue);
+  const largestMonth=largestMonthValue?new Date(reportYear,largestMonthIndex,1).toLocaleDateString('en-US',{month:'short'}):'—';
+  const settledCount=history.filter(item=>String(item.month_key||'').startsWith(String(reportYear))).length;
+  const incomeSplitCount=yearBills.filter(bill=>bill.split_method==='income').length;
 
-  // ── Section 2: Category breakdown per month ───────────────────
-  const monthBlocks=months.map((mk,i)=>{
+  const paidBy={},shareBy={};people.forEach(person=>{paidBy[person.id]=0;shareBy[person.id]=0;});
+  yearBills.forEach(bill=>{
+    const amount=Number(bill.amount||0),pct=Number(bill.split_pct??50)/100,payerId=bill.payer_person_id;
+    paidBy[payerId]=(paidBy[payerId]||0)+amount;
+    shareBy[payerId]=(shareBy[payerId]||0)+amount*(1-pct);
+    const other=people.find(person=>person.id!==payerId);
+    if(other)shareBy[other.id]=(shareBy[other.id]||0)+amount*pct;
+  });
+  const maxPersonMetric=Math.max(...Object.values(paidBy),...Object.values(shareBy),1);
+  const personCards=people.map(person=>`<div class="report-person-card">
+    <div class="report-person-name">${escapeHtml(person.name)}</div>
+    <div class="report-metric"><div class="report-metric-head"><span>Paid upfront</span><span>${fm(paidBy[person.id]||0)}</span></div><div class="report-mini-track"><div class="report-mini-fill" style="width:${(paidBy[person.id]||0)/maxPersonMetric*100}%"></div></div></div>
+    <div class="report-metric"><div class="report-metric-head"><span>Share of costs</span><span>${fm(shareBy[person.id]||0)}</span></div><div class="report-mini-track"><div class="report-mini-fill share" style="width:${(shareBy[person.id]||0)/maxPersonMetric*100}%"></div></div></div>
+  </div>`).join('');
+
+  const categoryTotals={};yearBills.forEach(bill=>categoryTotals[bill.category]=(categoryTotals[bill.category]||0)+Number(bill.amount||0));
+  const categoryRows=CATS.filter(category=>categoryTotals[category.id]>0).sort((a,b)=>categoryTotals[b.id]-categoryTotals[a.id]).map(category=>{
+    const value=categoryTotals[category.id],pct=yearTotal?value/yearTotal*100:0;
+    return`<div class="report-bar-row"><div class="report-bar-label">${category.icon} ${category.name}</div><div class="report-bar-track"><div class="report-bar-fill" style="width:${pct}%"></div></div><div class="report-bar-value">${fm(value)}<div style="font-size:.58rem;color:var(--muted)">${pct.toFixed(0)}%</div></div></div>`;
+  }).join('');
+
+  const largestRows=yearBills.slice().sort((a,b)=>Number(b.amount||0)-Number(a.amount||0)).slice(0,5).map(bill=>{
+    const category=CATMAP[bill.category]||CATMAP.other,payer=personById(bill.payer_person_id);
+    return`<div class="report-list-row"><div style="font-size:1.15rem">${category.icon}</div><div class="report-list-main"><div class="report-list-title">${escapeHtml(bill.name)}</div><div class="report-list-sub">${bill.date} · ${escapeHtml(payer.name)} paid</div></div><div class="report-list-value">${fm(Number(bill.amount||0))}</div></div>`;
+  }).join('');
+
+  const selectedMonths=months.filter(mk=>mk.startsWith(String(reportYear)));
+  const monthBlocks=selectedMonths.map((mk,i)=>{
     const mbills=billsByMonth[mk];
     const byCat={};
     mbills.forEach(b=>{byCat[b.category]=(byCat[b.category]||0)+Number(b.amount||0);});
@@ -1109,22 +1283,44 @@ function renderReports(){
   el.innerHTML=`
     <div class="report-section">
       <div class="report-section-header">
-        <div class="report-section-title">Monthly Totals</div>
+        <div class="report-section-title">Year Overview</div>
         <div class="year-nav">
           <button class="year-nav-btn" onclick="changeReportYear(-1)" ${canPrev?'':'disabled'}>‹</button>
           <span class="year-nav-label">${reportYear}</span>
           <button class="year-nav-btn" onclick="changeReportYear(1)" ${canNext?'':'disabled'}>›</button>
         </div>
       </div>
-      ${hasYearData?buildLineChart(yearValues):`<div class="report-empty">No data for ${reportYear}</div>`}
+      <div class="report-summary-grid">
+        <div class="report-summary-card"><div class="report-summary-label">Total spent</div><div class="report-summary-value">${fm(yearTotal)}</div><div class="report-summary-sub">${incomeSplitCount} income-split expense${incomeSplitCount===1?'':'s'}</div></div>
+        <div class="report-summary-card"><div class="report-summary-label">Monthly average</div><div class="report-summary-value">${fm(monthlyAverage)}</div><div class="report-summary-sub">Across ${activeMonthCount} active month${activeMonthCount===1?'':'s'}</div></div>
+        <div class="report-summary-card"><div class="report-summary-label">Transactions</div><div class="report-summary-value">${yearBills.length.toLocaleString()}</div><div class="report-summary-sub">${settledCount} settlement${settledCount===1?'':'s'} archived</div></div>
+        <div class="report-summary-card"><div class="report-summary-label">Largest month</div><div class="report-summary-value">${largestMonth}</div><div class="report-summary-sub">${fm(largestMonthValue)}</div></div>
+      </div>
     </div>
     <div class="report-section">
-      <div class="report-section-title">Spending by Category</div>
-      ${monthBlocks}
+      <div class="report-section-title">Paid vs. Responsibility</div>
+      <p class="settings-note">Paid upfront shows who charged the expenses. Share of costs applies each expense's saved split percentage.</p>
+      <div class="report-person-grid">${personCards}</div>
+    </div>
+    <div class="report-section">
+      <div class="report-section-title">Monthly Totals</div>
+      ${yearBills.length?buildLineChart(yearValues):`<div class="report-empty">No data for ${reportYear}</div>`}
+    </div>
+    <div class="report-section">
+      <div class="report-section-title">Category Totals</div>
+      ${categoryRows||`<div class="report-empty">No category data for ${reportYear}</div>`}
+    </div>
+    <div class="report-section">
+      <div class="report-section-title">Largest Expenses</div>
+      ${largestRows||`<div class="report-empty">No expenses for ${reportYear}</div>`}
+    </div>
+    <div class="report-section">
+      <div class="report-section-title">Monthly Category Details</div>
+      ${monthBlocks||`<div class="report-empty">No monthly data for ${reportYear}</div>`}
     </div>`;
 }
 
-window.changeReportYear=function(delta){reportYear+=delta;renderReports();};
+window.changeReportYear=function(delta){const index=reportYears.indexOf(reportYear),next=reportYears[index+delta];if(next!==undefined){reportYear=next;renderReports();}};
 
 function buildLineChart(values){
   const W=560,H=200,PL=64,PR=16,PT=32,PB=38;
@@ -1189,7 +1385,7 @@ function renderTopbar(){
     people:`${people.length} people`,
     export:'Download expenses as CSV',
     import:'Bring in a Splitwise group export',
-    reports:'Spending trends across all months'
+    reports:'Yearly spending and household insights'
   };
   document.getElementById('tb-title').textContent=titles[activeView]||'BillSplit';
   document.getElementById('tb-sub').textContent=subs[activeView]||'';
@@ -1484,6 +1680,7 @@ window.savePerson=async function(){
     await sb.from('people').insert({household_id:HOUSEHOLD_ID,name,role,annual_income,color_idx:colorIdx,is_you:false});
   }
   await loadPeople(); closePersonModal(); render();
+  if(document.getElementById('settings-overlay').classList.contains('open'))renderSettingsPeople();
   showToast('Saved!');
 };
 
@@ -1515,12 +1712,13 @@ function switchView(v){
 }
 
 // Close modals on overlay click
-['add-overlay','settle-overlay','person-overlay'].forEach(id=>{
+['add-overlay','settle-overlay','person-overlay','settings-overlay'].forEach(id=>{
   document.getElementById(id).addEventListener('click',e=>{
     if(e.target===document.getElementById(id)){
       if(id==='add-overlay')closeAddModal();
       else if(id==='settle-overlay')closeSettleModal();
       else if(id==='person-overlay')closePersonModal();
+      else if(id==='settings-overlay')closeSettings();
     }
   });
 });
